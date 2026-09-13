@@ -2,6 +2,8 @@
 
 Custom RocketModFix/LDM plugin suite and Workshop UI source for the **Kanomjeen** Unturned server.
 
+> **AI agents and new contributors: read [`AGENTS.md`](AGENTS.md) first.** It documents the toolchain, the Unity/Workshop export workflow, verification commands, known traps and the frozen identities.
+
 ## Target
 - Game: Unturned Dedicated Server
 - Map: California 2
@@ -62,5 +64,6 @@ See:
 - `THIRD_PARTY_NOTICES.md`
 - `workshop-ui/WORKSHOP_RELEASE.md`
 - `FINAL_LOCAL_PROMPT.md` — one complete prompt for the AI/agent on the real deployment computer
+- `AGENTS.md` — working instructions for AI agents continuing this project (toolchain, export workflow, verification recipes, Workshop publishing)
 
 A real server build/test is a mandatory release gate. This connected workspace does not expose the target server runtime or Unity Editor, so the repository must not be considered compile-certified or Workshop-published until `FINAL_LOCAL_PROMPT.md` is executed against the real deployment/staging environment and the critical gates in `QA_REPORT.md` pass.
