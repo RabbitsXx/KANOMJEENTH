@@ -69,6 +69,7 @@ namespace Kanomjeen.EditorTools
             BuildAdmin(shell.transform);
             BuildToast(shell.transform);
 
+            ValidateTextLayout(root);
             PrefabUtility.SaveAsPrefabAsset(root, OutputPrefab);
             Object.DestroyImmediate(root);
             AssetDatabase.SaveAssets();
@@ -260,9 +261,17 @@ namespace Kanomjeen.EditorTools
             go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
+
+            // IMPORTANT: `pos` is treated as the aligned edge/point, not always the
+            // centre of the text rect. The previous implementation forced a 0.5/0.5
+            // pivot for every label. For MiddleLeft labels this shifted the rendered
+            // text left by half of rectSize.x, which is why card titles/subtitles were
+            // visibly outside their panels in-game. Match the RectTransform pivot to
+            // the TextAnchor so the authored coordinates remain intuitive/stable.
+            rect.pivot = PivotFor(anchor);
             rect.anchoredPosition = pos;
             rect.sizeDelta = rectSize;
+
             var label = go.GetComponent<Text>();
             label.text = text;
             label.font = _font;
@@ -274,6 +283,80 @@ namespace Kanomjeen.EditorTools
             label.verticalOverflow = VerticalWrapMode.Truncate;
             label.raycastTarget = false;
             return label;
+        }
+
+        private static void ValidateTextLayout(GameObject root)
+        {
+            var labels = root.GetComponentsInChildren<Text>(true);
+            var failures = 0;
+            for (var i = 0; i < labels.Length; i++)
+            {
+                var label = labels[i];
+                var rect = label.rectTransform;
+                var expected = PivotFor(label.alignment);
+                if (Vector2.SqrMagnitude(rect.pivot - expected) <= 0.0001f) continue;
+
+                failures++;
+                Debug.LogError("[Kanomjeen] Text pivot mismatch: " + GetHierarchyPath(label.transform)
+                    + " alignment=" + label.alignment
+                    + " pivot=" + rect.pivot
+                    + " expected=" + expected);
+            }
+
+            if (failures > 0)
+                throw new System.InvalidOperationException("Kanomjeen UI layout validation failed for " + failures + " text element(s). Fix pivots before exporting the Workshop bundle.");
+        }
+
+        private static string GetHierarchyPath(Transform transform)
+        {
+            var path = transform.name;
+            while (transform.parent != null)
+            {
+                transform = transform.parent;
+                path = transform.name + "/" + path;
+            }
+            return path;
+        }
+
+        private static Vector2 PivotFor(TextAnchor anchor)
+        {
+            float x;
+            switch (anchor)
+            {
+                case TextAnchor.UpperLeft:
+                case TextAnchor.MiddleLeft:
+                case TextAnchor.LowerLeft:
+                    x = 0f;
+                    break;
+                case TextAnchor.UpperRight:
+                case TextAnchor.MiddleRight:
+                case TextAnchor.LowerRight:
+                    x = 1f;
+                    break;
+                default:
+                    x = 0.5f;
+                    break;
+            }
+
+            float y;
+            switch (anchor)
+            {
+                case TextAnchor.UpperLeft:
+                case TextAnchor.UpperCenter:
+                case TextAnchor.UpperRight:
+                    y = 1f;
+                    break;
+                case TextAnchor.LowerLeft:
+                case TextAnchor.LowerCenter:
+                case TextAnchor.LowerRight:
+                    y = 0f;
+                    break;
+                default:
+                    y = 0.5f;
+                    break;
+            }
+
+            return new Vector2(x, y);
         }
 
         private static void AddAccent(Transform shell)

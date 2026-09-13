@@ -43,7 +43,17 @@ namespace Kanomjeen.Core.Services
         public bool Open(UnturnedPlayer player, string screen, string title = null, string status = null)
         {
             if (!IsConfigured || player?.Player == null) return false;
-            EffectManager.sendUIEffect(effectId, key, player.CSteamID, true);
+
+            // Send the Effect once per active UI session. Feature screens switch by
+            // visibility instead of instantiating another copy of the same Effect.
+            // On the first open we clear any stale client copy left by a plugin reload
+            // before sending a fresh instance.
+            if (!activeScreens.ContainsKey(player.Id))
+            {
+                EffectManager.askEffectClearByID(effectId, player.CSteamID);
+                EffectManager.sendUIEffect(effectId, key, player.CSteamID, true);
+            }
+
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, true);
             screen = string.IsNullOrWhiteSpace(screen) ? "main" : screen.Trim().ToLowerInvariant();
             activeScreens[player.Id] = screen;
