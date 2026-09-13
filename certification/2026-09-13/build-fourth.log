@@ -1,0 +1,125 @@
+==> Building Kanomjeen.Core
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.65
+==> Building Kanomjeen.TPA
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.TPA -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.TPA/bin/Release/Kanomjeen.TPA.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.89
+==> Building Kanomjeen.Homes
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.Homes -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Homes/bin/Release/Kanomjeen.Homes.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.87
+==> Building Kanomjeen.Kits
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.Kits -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Kits/bin/Release/Kanomjeen.Kits.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.04
+==> Building Kanomjeen.Respawn
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.Respawn -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Respawn/bin/Release/Kanomjeen.Respawn.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.31
+==> Building Kanomjeen.BuildGuard
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.BuildGuard -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.BuildGuard/bin/Release/Kanomjeen.BuildGuard.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.44
+==> Building Kanomjeen.Airdrops
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.Airdrops -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Airdrops/bin/Release/Kanomjeen.Airdrops.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.02
+==> Building Kanomjeen.Stats
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.Stats -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Stats/bin/Release/Kanomjeen.Stats.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.68
+==> Building Kanomjeen.ServerManager
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.ServerManager -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.ServerManager/bin/Release/Kanomjeen.ServerManager.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.81
+==> Building Kanomjeen.AdminAudit
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+/home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.AdminAudit/KanomjeenAdminAuditPlugin.cs(123,13): warning CS0612: 'SteamBlacklist.ban(CSteamID, CSteamID, string, uint)' is obsolete [/home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.AdminAudit/Kanomjeen.AdminAudit.csproj]
+  Kanomjeen.AdminAudit -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.AdminAudit/bin/Release/Kanomjeen.AdminAudit.dll
+
+Build succeeded.
+
+/home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.AdminAudit/KanomjeenAdminAuditPlugin.cs(123,13): warning CS0612: 'SteamBlacklist.ban(CSteamID, CSteamID, string, uint)' is obsolete [/home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.AdminAudit/Kanomjeen.AdminAudit.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.04
+==> Building Kanomjeen.VehicleGuard
+  Determining projects to restore...
+  Restored /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.VehicleGuard/Kanomjeen.VehicleGuard.csproj (in 632 ms).
+  1 of 2 projects are up-to-date for restore.
+  Kanomjeen.Core -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.Core/bin/Release/Kanomjeen.Core.dll
+  Kanomjeen.VehicleGuard -> /home/rabbitsx/Mywork/control-center/kanomjeen-suite/src/Kanomjeen.VehicleGuard/bin/Release/Kanomjeen.VehicleGuard.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.85
+Build complete: /home/rabbitsx/Mywork/control-center/kanomjeen-suite/dist/plugins

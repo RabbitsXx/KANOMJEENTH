@@ -1,0 +1,43 @@
+{
+  "host_os": "Ubuntu 26.04.1 LTS",
+  "kernel": "7.0.0-31-generic",
+  "dotnet_initial": "not found on PATH or searched host/container locations",
+  "dotnet_build_sdk": "8.0.425 installed locally at /home/rabbitsx/.local/share/kanomjeen-dotnet",
+  "server_root": "/home/rabbitsx/unturned",
+  "running_server_id": "Mywork",
+  "staging_target": "Mywork (verified from running +InternetServer/Mywork process and server paths)",
+  "steam_build_id": "25107012",
+  "game_version_from_log": "3.26.3.11",
+  "engine_version_from_log": "2022.3.62f3",
+  "rocket_unturned_version": "4.9.3.18",
+  "rocket_api_core_assembly_version": "4.9.3.16",
+  "server_runtime_os_from_log": "Debian GNU/Linux 13 (Docker)",
+  "unity_editor": "not found in searched locations",
+  "project_unitypackage": "not found in installed Extras/Sources",
+  "california2": {
+    "workshop_id": "3707778928",
+    "manifest": "8060994661141500375"
+  },
+  "california2_assets": {
+    "workshop_id": "3711646503",
+    "manifest": "3779634039134940814"
+  },
+  "assemblies": [
+    {
+      "path": "/home/rabbitsx/unturned/Unturned_Headless_Data/Managed/Assembly-CSharp.dll",
+      "sha256": "affebafc46e1290f6dd0af358e4d6b118da51a7802bf8fab83089d7bddfeac79"
+    },
+    {
+      "path": "/home/rabbitsx/unturned/Modules/Rocket.Unturned/Rocket.API.dll",
+      "sha256": "c4fd7718fdf46af4589ff3f01198203e83085c80c07e28728b984938986e5ad6"
+    },
+    {
+      "path": "/home/rabbitsx/unturned/Modules/Rocket.Unturned/Rocket.Core.dll",
+      "sha256": "61377490448f24c7a3a53f7ddfba77728ad801fc6dd87193b0e3d4f78dc9fed0"
+    },
+    {
+      "path": "/home/rabbitsx/unturned/Modules/Rocket.Unturned/Rocket.Unturned.dll",
+      "sha256": "dc8a1e6dfca79ab50a6bc286bbda9bf0c679ab93ae85a030818497f7b236a39d"
+    }
+  ]
+}

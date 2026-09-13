@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RocketModFix.LDM.Redist" Version="4.9.3.18" PrivateAssets="all" />
+    <PackageReference Include="RocketModFix.Unturned.Redist.Server" Version="3.26.3.11" PrivateAssets="all" />
+    <PackageReference Include="RocketModFix.UnityEngine.Redist" Version="2022.3.62.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Kanomjeen.Kits</AssemblyName><RootNamespace>Kanomjeen.Kits</RootNamespace></PropertyGroup><ItemGroup><ProjectReference Include="../Kanomjeen.Core/Kanomjeen.Core.csproj" /></ItemGroup></Project>

@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Kanomjeen.BuildGuard</AssemblyName><RootNamespace>Kanomjeen.BuildGuard</RootNamespace></PropertyGroup><ItemGroup><ProjectReference Include="../Kanomjeen.Core/Kanomjeen.Core.csproj" /></ItemGroup></Project>

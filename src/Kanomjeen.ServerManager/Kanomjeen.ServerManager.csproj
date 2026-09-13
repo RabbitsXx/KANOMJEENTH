@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Kanomjeen.ServerManager</AssemblyName><RootNamespace>Kanomjeen.ServerManager</RootNamespace></PropertyGroup><ItemGroup><ProjectReference Include="../Kanomjeen.Core/Kanomjeen.Core.csproj" /></ItemGroup></Project>

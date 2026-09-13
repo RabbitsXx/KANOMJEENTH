@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Kanomjeen.Airdrops</AssemblyName><RootNamespace>Kanomjeen.Airdrops</RootNamespace></PropertyGroup><ItemGroup><ProjectReference Include="../Kanomjeen.Core/Kanomjeen.Core.csproj" /></ItemGroup></Project>

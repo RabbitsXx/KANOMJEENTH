@@ -1,0 +1,137 @@
+ASSEMBLY Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null PATH /home/rabbitsx/unturned/Unturned_Headless_Data/Managed/Assembly-CSharp.dll SHA256 AFFEBAFC46E1290F6DD0AF358E4D6B118DA51A7802BF8FAB83089D7BDDFEAC79
+ASSEMBLY Rocket.Unturned, Version=4.9.3.18, Culture=neutral, PublicKeyToken=null PATH /home/rabbitsx/unturned/Modules/Rocket.Unturned/Rocket.Unturned.dll SHA256 DC8A1E6DFCA79AB50A6BC286BBDA9BF0C679AB93AE85A030818497F7B236A39D
+TYPE SDG.Unturned.DamageTool
+  SDG.Unturned.DamageToolPlayerDamagedHandler playerDamaged
+    DELEGATE Void Invoke(SDG.Unturned.Player, SDG.Unturned.EDeathCause ByRef, SDG.Unturned.ELimb ByRef, Steamworks.CSteamID ByRef, UnityEngine.Vector3 ByRef, Single ByRef, Single ByRef, Boolean ByRef)
+TYPE SDG.Unturned.BarricadeManager
+  SDG.Unturned.BarricadeRegion[,] regions
+  System.Collections.Generic.IReadOnlyList`1[SDG.Unturned.VehicleBarricadeRegion] vehicleRegions
+  SDG.Unturned.DeployBarricadeRequestHandler onDeployBarricadeRequested
+    DELEGATE Void Invoke(SDG.Unturned.Barricade, SDG.Unturned.ItemBarricadeAsset, UnityEngine.Transform, UnityEngine.Vector3 ByRef, Single ByRef, Single ByRef, Single ByRef, UInt64 ByRef, UInt64 ByRef, Boolean ByRef)
+  SDG.Unturned.DamageBarricadeRequestHandler onDamageBarricadeRequested
+    DELEGATE Void Invoke(Steamworks.CSteamID, UnityEngine.Transform, UInt16 ByRef, Boolean ByRef, SDG.Unturned.EDamageOrigin)
+TYPE SDG.Unturned.StructureManager
+  SDG.Unturned.StructureRegion[,] regions
+  SDG.Unturned.DeployStructureRequestHandler onDeployStructureRequested
+    DELEGATE Void Invoke(SDG.Unturned.Structure, SDG.Unturned.ItemStructureAsset, UnityEngine.Vector3 ByRef, Single ByRef, Single ByRef, Single ByRef, UInt64 ByRef, UInt64 ByRef, Boolean ByRef)
+  SDG.Unturned.DamageStructureRequestHandler onDamageStructureRequested
+    DELEGATE Void Invoke(Steamworks.CSteamID, UnityEngine.Transform, UInt16 ByRef, Boolean ByRef, SDG.Unturned.EDamageOrigin)
+TYPE SDG.Unturned.BarricadeDrop
+  SDG.Unturned.BarricadeData GetServersideData()
+    PARAMS 
+  SDG.Unturned.ItemBarricadeAsset asset
+TYPE SDG.Unturned.StructureDrop
+  SDG.Unturned.StructureData GetServersideData()
+    PARAMS 
+TYPE SDG.Unturned.EffectManager
+  Void askEffectClearByID(UInt16, Steamworks.CSteamID)
+    PARAMS System.UInt16 id, Steamworks.CSteamID steamID
+  Void askEffectClearByID(UInt16, SDG.NetTransport.ITransportConnection)
+    PARAMS System.UInt16 id, SDG.NetTransport.ITransportConnection transportConnection
+  Void sendUIEffectVisibility(Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String, Boolean)
+    PARAMS System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String childNameOrPath, System.Boolean visible
+  Void sendUIEffectText(Int16, Steamworks.CSteamID, Boolean, System.String, System.String)
+    PARAMS System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String childNameOrPath, System.String text
+  Void sendUIEffectText(Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String, System.String)
+    PARAMS System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String childNameOrPath, System.String text
+  Void sendUIEffect(UInt16, Int16, Steamworks.CSteamID, Boolean)
+    PARAMS System.UInt16 id, System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable
+  Void sendUIEffect(UInt16, Int16, Steamworks.CSteamID, Boolean, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String arg0
+  Void sendUIEffect(UInt16, Int16, Steamworks.CSteamID, Boolean, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String arg0, System.String arg1
+  Void sendUIEffect(UInt16, Int16, Steamworks.CSteamID, Boolean, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2
+  Void sendUIEffect(UInt16, Int16, Steamworks.CSteamID, Boolean, System.String, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2, System.String arg3
+  Void sendUIEffectVisibility(Int16, Steamworks.CSteamID, Boolean, System.String, Boolean)
+    PARAMS System.Int16 key, Steamworks.CSteamID steamID, System.Boolean reliable, System.String childNameOrPath, System.Boolean visible
+  Void sendUIEffect(UInt16, Int16, Boolean)
+    PARAMS System.UInt16 id, System.Int16 key, System.Boolean reliable
+  Void sendUIEffect(UInt16, Int16, Boolean, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, System.Boolean reliable, System.String arg0
+  Void sendUIEffect(UInt16, Int16, Boolean, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, System.Boolean reliable, System.String arg0, System.String arg1
+  Void sendUIEffect(UInt16, Int16, Boolean, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2
+  Void sendUIEffect(UInt16, Int16, Boolean, System.String, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2, System.String arg3
+  Void sendUIEffect(UInt16, Int16, SDG.NetTransport.ITransportConnection, Boolean)
+    PARAMS System.UInt16 id, System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable
+  Void sendUIEffect(UInt16, Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String arg0
+  Void sendUIEffect(UInt16, Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String arg0, System.String arg1
+  Void sendUIEffect(UInt16, Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2
+  Void sendUIEffect(UInt16, Int16, SDG.NetTransport.ITransportConnection, Boolean, System.String, System.String, System.String, System.String)
+    PARAMS System.UInt16 id, System.Int16 key, SDG.NetTransport.ITransportConnection transportConnection, System.Boolean reliable, System.String arg0, System.String arg1, System.String arg2, System.String arg3
+  EffectButtonClickedHandler onEffectButtonClicked
+    DELEGATE Void Invoke(SDG.Unturned.Player, System.String)
+TYPE Rocket.Unturned.Events.UnturnedPlayerEvents
+  PlayerDeath OnPlayerDeath
+    DELEGATE Void Invoke(Rocket.Unturned.Player.UnturnedPlayer, SDG.Unturned.EDeathCause, SDG.Unturned.ELimb, Steamworks.CSteamID)
+  PlayerRevive OnPlayerRevive
+    DELEGATE Void Invoke(Rocket.Unturned.Player.UnturnedPlayer, UnityEngine.Vector3, Byte)
+  PlayerUpdateStat OnPlayerUpdateStat
+    DELEGATE Void Invoke(Rocket.Unturned.Player.UnturnedPlayer, SDG.Unturned.EPlayerStat)
+TYPE SDG.Unturned.VehicleManager
+  EnterVehicleRequestHandler onEnterVehicleRequested
+    DELEGATE Void Invoke(SDG.Unturned.Player, SDG.Unturned.InteractableVehicle, Boolean ByRef)
+  SDG.Unturned.DamageVehicleRequestHandler onDamageVehicleRequested
+    DELEGATE Void Invoke(Steamworks.CSteamID, SDG.Unturned.InteractableVehicle, UInt16 ByRef, Boolean ByRef, Boolean ByRef, SDG.Unturned.EDamageOrigin)
+TYPE SDG.Unturned.LevelManager
+  Void airdrop(UnityEngine.Vector3, UInt16, Single)
+    PARAMS UnityEngine.Vector3 point, System.UInt16 id, System.Single speed
+TYPE SDG.Unturned.SteamBlacklist
+  System.Collections.Generic.List`1[SDG.Unturned.SteamBlacklistID] get_list()
+    PARAMS 
+  Void ban(Steamworks.CSteamID, Steamworks.CSteamID, System.String, UInt32)
+    PARAMS Steamworks.CSteamID playerID, Steamworks.CSteamID judgeID, System.String reason, System.UInt32 duration
+  Void ban(Steamworks.CSteamID, UInt32, Steamworks.CSteamID, System.String, UInt32)
+    PARAMS Steamworks.CSteamID playerID, System.UInt32 ip, Steamworks.CSteamID judgeID, System.String reason, System.UInt32 duration
+  Void ban(Steamworks.CSteamID, UInt32, System.Collections.Generic.IEnumerable`1[System.Byte[]], Steamworks.CSteamID, System.String, UInt32)
+    PARAMS Steamworks.CSteamID playerID, System.UInt32 ip, System.Collections.Generic.IEnumerable`1[System.Byte[]] hwids, Steamworks.CSteamID judgeID, System.String reason, System.UInt32 duration
+  Boolean unban(Steamworks.CSteamID)
+    PARAMS Steamworks.CSteamID playerID
+  Boolean checkBanned(Steamworks.CSteamID, SDG.Unturned.SteamBlacklistID ByRef)
+    PARAMS Steamworks.CSteamID playerID, SDG.Unturned.SteamBlacklistID& blacklistID
+  Boolean checkBanned(Steamworks.CSteamID, UInt32, SDG.Unturned.SteamBlacklistID ByRef)
+    PARAMS Steamworks.CSteamID playerID, System.UInt32 ip, SDG.Unturned.SteamBlacklistID& blacklistID
+  Boolean checkBanned(Steamworks.CSteamID, UInt32, System.Collections.Generic.IEnumerable`1[System.Byte[]], SDG.Unturned.SteamBlacklistID ByRef)
+    PARAMS Steamworks.CSteamID playerID, System.UInt32 ip, System.Collections.Generic.IEnumerable`1[System.Byte[]] hwids, SDG.Unturned.SteamBlacklistID& blacklistID
+  Void load()
+    PARAMS 
+  Void save()
+    PARAMS 
+  System.Type GetType()
+    PARAMS 
+  System.String ToString()
+    PARAMS 
+  Boolean Equals(System.Object)
+    PARAMS System.Object obj
+  Int32 GetHashCode()
+    PARAMS 
+  Void .ctor()
+  System.Collections.Generic.List`1[SDG.Unturned.SteamBlacklistID] list
+  Byte SAVEDATA_VERSION
+  UInt32 PERMANENT
+  UInt32 TEMPORARY
+  Byte SAVEDATA_VERSION_ADDED_HWID
+    CONSTANT 4
+TYPE Rocket.Unturned.Player.UnturnedPlayer
+  Void Kick(System.String)
+    PARAMS System.String reason
+  Void Ban(System.String, UInt32)
+    PARAMS System.String reason, System.UInt32 duration
+  Void Ban(Steamworks.CSteamID, System.String, UInt32)
+    PARAMS Steamworks.CSteamID instigator, System.String reason, System.UInt32 duration
+  SDG.Unturned.InteractableVehicle CurrentVehicle
+TYPE SDG.Unturned.Player
+  Boolean teleportToLocation(UnityEngine.Vector3, Single)
+    PARAMS UnityEngine.Vector3 position, System.Single yaw
+TYPE SDG.Unturned.EBuild
+FORTIFICATION, BARRICADE, DOOR, GATE, BED, LADDER, STORAGE, FARM, TORCH, CAMPFIRE, SPIKE, WIRE, GENERATOR, SPOT, SAFEZONE, FREEFORM, SIGN, VEHICLE, CLAIM, BEACON, STORAGE_WALL, BARREL_RAIN, OIL, CAGE, SHUTTER, TANK, CHARGE, SENTRY, SENTRY_FREEFORM, OVEN, LIBRARY, OXYGENATOR, GLASS, NOTE, HATCH, MANNEQUIN, STEREO, SIGN_WALL, CLOCK, BARRICADE_WALL
+PERMISSION Rocket.API.IRocketPermissionsProviderExtensions Boolean HasPermission(Rocket.API.IRocketPermissionsProvider, Rocket.API.IRocketPlayer, System.String)
+PERMISSION Rocket.API.IRocketPermissionsProviderExtensions Boolean HasPermission(Rocket.API.IRocketPermissionsProvider, Rocket.API.IRocketPlayer, Rocket.API.IRocketCommand)
+PERMISSION Rocket.API.IRocketPlayerExtension Boolean HasPermission(Rocket.API.IRocketPlayer, System.String)
