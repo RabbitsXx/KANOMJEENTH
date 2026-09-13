@@ -14,6 +14,13 @@
 
 Initial Kanomjeen integrated staging suite.
 
+### UI layout hotfix
+- Fixed all left/right-aligned uGUI labels using a center pivot, which displaced titles/subtitles outside their cards in the exported Effect.
+- Text RectTransform pivots now follow `TextAnchor` alignment and the Unity builder validates every Text pivot before saving the prefab.
+- `UiService.Open` now sends one Effect instance per active UI session and switches screens with visibility updates instead of stacking another Effect instance.
+- First open clears stale copies left by plugin reloads, and Core unload clears the Effect from connected clients before disposing the UI service.
+- Requires rebuilding/exporting the Workshop UI and rebuilding `Kanomjeen.Core.dll` for the complete fix.
+
 ### Added
 - Shared `Kanomjeen.Core` runtime services.
 - Combat and raid tagging.

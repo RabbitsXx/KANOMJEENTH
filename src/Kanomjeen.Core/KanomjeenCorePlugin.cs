@@ -66,7 +66,20 @@ namespace Kanomjeen.Core
             DamageTool.playerDamaged -= OnPlayerDamaged;
             BarricadeManager.onDamageBarricadeRequested -= OnBarricadeDamage;
             StructureManager.onDamageStructureRequested -= OnStructureDamage;
-            Ui?.Unsubscribe();
+
+            // Clear the client UI before tearing down the service. Without this, a
+            // Rocket/plugin reload can leave the old Effect instance on connected
+            // clients and the next /menu would stack another copy on top of it.
+            if (Ui != null)
+            {
+                foreach (var steamPlayer in Provider.clients)
+                {
+                    var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
+                    if (player?.Player != null) Ui.Close(player);
+                }
+                Ui.Unsubscribe();
+            }
+
             Cooldowns?.SaveIfDirty();
 
             RateLimiter?.Clear();
