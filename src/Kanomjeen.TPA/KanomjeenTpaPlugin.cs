@@ -21,6 +21,9 @@ namespace Kanomjeen.TPA
         private readonly HashSet<string> damagedWarmups = new HashSet<string>(StringComparer.Ordinal);
         private KanomjeenCorePlugin boundCore;
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
+        private KanomjeenTpaUi ui;
+        private KanomjeenTpaUi TpaUi => ui ?? (ui = new KanomjeenTpaUi(this));
+        internal UiService Ui => Core?.Ui;
         private Color MessageColor => UnturnedChat.GetColorFromName(Configuration.Instance.MessageColor ?? "cyan", Color.cyan);
 
         protected override void Load()
@@ -224,28 +227,21 @@ namespace Kanomjeen.TPA
 
         private void ShowIncomingUi(UnturnedPlayer target, TpaRequest request, float timeout)
         {
-            if (Core?.Ui == null || !Core.Ui.IsConfigured) return;
-            Core.Ui.Open(target, "tpa", "KANOMJEEN • TPA", request.Direction == TpaDirection.ToTarget ? "Teleport request" : "Teleport here request");
-            Core.Ui.SetVisible(target, "KJ_TPA_RequestPanel", true);
-            Core.Ui.SetText(target, "KJ_TPA_Requester", request.RequesterName);
-            Core.Ui.SetText(target, "KJ_TPA_Timer", Math.Ceiling(timeout) + "s");
+            if (request == null) return;
+            TpaUi.ShowRequest(target, request.RequesterName, timeout, request.Direction == TpaDirection.ToRequester);
         }
 
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
-            if (e == null || e.Player == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_TPA")
-            {
-                Core.Ui.Open(e.Player, "tpa", "KANOMJEEN • TPA", "Use /tpa <player> or /tpahere <player>. Requests appear here.");
-                Core.Ui.SetVisible(e.Player, "KJ_TPA_RequestPanel", false);
-                return;
-            }
-            if (e.Screen != "tpa") return;
-            if (!ConsumeRate(e.Player, "tpa.ui", 0.5f)) return;
-            if (e.Button == "KJ_TPA_Accept") CommandAccept(e.Player, new string[0]);
-            else if (e.Button == "KJ_TPA_Deny") CommandDeny(e.Player, new string[0]);
-            else if (e.Button == "KJ_TPA_Cancel") CommandCancel(e.Player, new string[0]);
+            if (e?.Player == null) return;
+            TpaUi.OnButton(e.Player, e.Screen, e.Button);
         }
+
+        // Surface used by KanomjeenTpaUi: rate gate plus the three request actions it routes to.
+        internal bool AllowUiAction(UnturnedPlayer player) => ConsumeRate(player, "tpa.ui", 0.5f);
+        internal void AcceptLatest(UnturnedPlayer player) => CommandAccept(player, new string[0]);
+        internal void DenyLatest(UnturnedPlayer player) => CommandDeny(player, new string[0]);
+        internal void CancelOutgoing(UnturnedPlayer player) => CommandCancel(player, new string[0]);
 
         private bool TryBindCore()
         {

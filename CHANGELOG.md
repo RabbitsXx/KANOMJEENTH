@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-staging — 2026-09-14 Workshop UI reliability pass
+
+- Fixed the Waypoints screen rendering stacked on top of the main menu: `UiService.Screens` did not list `waypoints`, so the container was never hidden. The list is now one static field, checked against the Unity prefab by `verify-source.sh` / `verify-source.ps1`, and an unknown screen name logs an error and falls back to `main`.
+- Split UI entry from navigation: `UiService.Open` now always clear+sends a fresh Effect (reference-plugin behaviour that survives stale client copies), and the new `UiService.ShowScreen` drives in-menu navigation with visibility/text only. Feature plugins follow that convention.
+- Layout fixes from the in-game screenshot: the Waypoints help line no longer collides with the shell status line, rows moved to `146 - i*54`, `STOP TRACKING` to `y -300`, and the main-menu cards were resized to 370×112 and re-spaced so the STAFF card stays inside the shell.
+- Re-exported the master bundle set with Unity 2022.3.62f3 (Noto Sans Thai still embedded) and refreshed `Kanomjeen_UI_Workshop`; `.hash` re-verified against all three bundles.
+- Restructured every feature's client presentation into its own `*Ui` class (Homes, Kits, Stats, TPA, Airdrops, AdminAudit, Core Waypoints) with a small internal plugin surface, so gameplay classes no longer build screens, rows or button handlers inline. Shared helpers are `UiGuard` (error containment + prefix/index parsing) and `UiRow`.
+- Documented the Unturned GUI reliability rules, the per-feature UI layer map and the study of a reference plugin in `AGENTS.md` §13.
+
 ## 0.1.0-staging — 2026-09-13 compile/runtime certification
 
 - Compiled a clean coherent 11-DLL Release set against Unturned `3.26.3.11`, RocketModFix `4.9.3.18`, and Unity redists `2022.3.62.3`.

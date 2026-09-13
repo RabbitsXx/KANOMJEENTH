@@ -17,6 +17,9 @@ namespace Kanomjeen.Kits
     {
         private KanomjeenCorePlugin boundCore;
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
+        private KanomjeenKitsUi ui;
+        private KanomjeenKitsUi KitsUi => ui ?? (ui = new KanomjeenKitsUi(this));
+        internal UiService Ui => Core?.Ui;
         private Color MessageColor => UnturnedChat.GetColorFromName(Configuration.Instance.MessageColor ?? "cyan", Color.cyan);
 
         protected override void Load()
@@ -60,7 +63,7 @@ namespace Kanomjeen.Kits
                 var remaining = Core.Cooldowns.GetRemaining(player.Id, "kit:" + kit.Name.ToLowerInvariant(), DateTime.UtcNow);
                 Say(player, "Line", kit.Name, remaining > TimeSpan.Zero ? Math.Ceiling(remaining.TotalSeconds) + "s" : "ready");
             }
-            ShowUi(player, visible);
+            KitsUi.Show(player);
         }
 
         private void Claim(UnturnedPlayer player, string name)
@@ -102,31 +105,32 @@ namespace Kanomjeen.Kits
             return null;
         }
 
-        private void ShowUi(UnturnedPlayer player, List<KitDefinition> kits)
-        {
-            if (Core?.Ui == null || !Core.Ui.IsConfigured) return;
-            Core.Ui.Open(player, "kits", "KANOMJEEN • KITS", "Survival utility only — no pay-to-win loadouts.");
-            for (var i = 0; i < 8; i++)
-            {
-                var visible = i < kits.Count;
-                Core.Ui.SetVisible(player, "KJ_Kit_Row_" + i, visible);
-                if (!visible) continue;
-                var kit = kits[i];
-                var remaining = Core.Cooldowns.GetRemaining(player.Id, "kit:" + kit.Name.ToLowerInvariant(), DateTime.UtcNow);
-                Core.Ui.SetText(player, "KJ_Kit_Name_" + i, kit.DisplayName ?? kit.Name);
-                Core.Ui.SetText(player, "KJ_Kit_Cooldown_" + i, remaining > TimeSpan.Zero ? Math.Ceiling(remaining.TotalSeconds) + "s" : "READY");
-            }
-        }
-
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
             if (e?.Player == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_Kits") { ShowUi(e.Player, AvailableFor(e.Player)); return; }
-            if (e.Screen != "kits" || !Rate(e.Player, "kit.ui", 0.5f)) return;
-            const string prefix = "KJ_Kit_Claim_";
-            if (!e.Button.StartsWith(prefix, StringComparison.Ordinal) || !int.TryParse(e.Button.Substring(prefix.Length), out var index)) return;
-            var kits = AvailableFor(e.Player); if (index < 0 || index >= kits.Count) return;
-            Claim(e.Player, kits[index].Name);
+            KitsUi.OnButton(e.Player, e.Screen, e.Button);
+        }
+
+        // Surface used by KanomjeenKitsUi: display rows, permission gate and the claim action it routes to.
+        internal List<UiRow> KitRows(UnturnedPlayer player)
+        {
+            var rows = new List<UiRow>();
+            var now = DateTime.UtcNow;
+            foreach (var kit in AvailableFor(player))
+            {
+                var remaining = Core.Cooldowns.GetRemaining(player.Id, "kit:" + kit.Name.ToLowerInvariant(), now);
+                rows.Add(new UiRow(kit.DisplayName ?? kit.Name, remaining > TimeSpan.Zero ? Math.Ceiling(remaining.TotalSeconds) + "s" : "READY"));
+            }
+            return rows;
+        }
+
+        internal bool AllowUiAction(UnturnedPlayer player) => Rate(player, "kit.ui", 0.5f);
+
+        internal void ClaimKitByIndex(UnturnedPlayer player, int index)
+        {
+            var kits = AvailableFor(player);
+            if (index < 0 || index >= kits.Count) return;
+            Claim(player, kits[index].Name);
         }
 
         private bool TryBindCore()

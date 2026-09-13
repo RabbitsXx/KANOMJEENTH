@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Kanomjeen.Core.Configuration;
 using Kanomjeen.Core.Services;
@@ -18,6 +19,9 @@ namespace Kanomjeen.Core
     public sealed class KanomjeenCorePlugin : RocketPlugin<KanomjeenCoreConfiguration>
     {
         public static KanomjeenCorePlugin Instance { get; private set; }
+
+        private WaypointUi waypointUi;
+        private WaypointUi WaypointsUi => waypointUi ?? (waypointUi = new WaypointUi(this));
 
         public KanomjeenCoreConfiguration Config => Configuration.Instance;
         public PlayerStateService PlayerStates { get; private set; }
@@ -149,40 +153,48 @@ namespace Kanomjeen.Core
             ShowWaypoints(player);
         }
 
-        private void ShowWaypoints(UnturnedPlayer player)
+        internal void ShowWaypoints(UnturnedPlayer player)
         {
-            var list = Waypoints.GetVisible(player);
-            if (Ui?.IsConfigured == true)
-            {
-                Ui.Open(player, "waypoints", "KANOMJEEN • WAYPOINTS", "Fallback mode: the tracked destination uses Unturned's native map marker.");
-                for (var i = 0; i < 8; i++)
-                {
-                    var visible = i < list.Count;
-                    Ui.SetVisible(player, "KJ_Waypoint_Row_" + i, visible);
-                    if (visible) Ui.SetText(player, "KJ_Waypoint_Name_" + i, (i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? "  [TRACKED]" : ""));
-                }
-            }
-            Say(player, "Waypoints: " + list.Count + "/" + Waypoints.EffectiveLimit(player));
-            for (var i = 0; i < list.Count; i++) Say(player, (i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? " [tracked]" : ""));
+            WaypointsUi.Show(player);
+            SayWaypoints(player);
         }
 
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
             if (e?.Player == null || Waypoints == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_Waypoints") { ShowWaypoints(e.Player); return; }
-            if (e.Screen != "waypoints") return;
-            if (e.Button == "KJ_Waypoint_Stop") { Waypoints.StopTracking(e.Player); ShowWaypoints(e.Player); return; }
-            if (TryButtonIndex(e.Button, "KJ_Waypoint_Track_", out var i))
-            {
-                var list = Waypoints.GetVisible(e.Player); if (i < list.Count) Waypoints.Track(e.Player, list[i].Id); ShowWaypoints(e.Player);
-            }
-            else if (TryButtonIndex(e.Button, "KJ_Waypoint_Delete_", out i))
-            {
-                var list = Waypoints.GetVisible(e.Player); if (i < list.Count) Waypoints.Delete(e.Player, list[i].Id); ShowWaypoints(e.Player);
-            }
+            WaypointsUi.OnButton(e.Player, e.Screen, e.Button);
         }
 
-        private static bool TryButtonIndex(string value, string prefix, out int index) { index = -1; return value != null && value.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(value.Substring(prefix.Length), out index); }
+        // Surface used by WaypointUi: display lines and the actions it routes to.
+        internal List<string> WaypointLines(UnturnedPlayer player)
+        {
+            var list = Waypoints.GetVisible(player);
+            var lines = new List<string>();
+            for (var i = 0; i < list.Count; i++)
+                lines.Add((i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? "  [TRACKED]" : ""));
+            return lines;
+        }
+
+        internal bool WaypointTrack(UnturnedPlayer player, int index)
+        {
+            var list = Waypoints.GetVisible(player);
+            return index >= 0 && index < list.Count && Waypoints.Track(player, list[index].Id);
+        }
+
+        internal bool WaypointDelete(UnturnedPlayer player, int index)
+        {
+            var list = Waypoints.GetVisible(player);
+            return index >= 0 && index < list.Count && Waypoints.Delete(player, list[index].Id);
+        }
+
+        internal void WaypointStop(UnturnedPlayer player) => Waypoints?.StopTracking(player);
+
+        internal void SayWaypoints(UnturnedPlayer player)
+        {
+            var list = Waypoints.GetVisible(player);
+            Say(player, "Waypoints: " + list.Count + "/" + Waypoints.EffectiveLimit(player));
+            for (var i = 0; i < list.Count; i++) Say(player, (i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? " [tracked]" : ""));
+        }
         private static string JoinTail(string[] args, int start) => args == null || args.Length <= start ? null : string.Join(" ", args, start, args.Length - start).Trim();
         private static void Say(UnturnedPlayer player, string text) { if (player != null) Rocket.Unturned.Chat.UnturnedChat.Say(player, text, Color.cyan); }
 

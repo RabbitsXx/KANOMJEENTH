@@ -22,6 +22,9 @@ namespace Kanomjeen.Homes
         private readonly HashSet<string> damagedWarmups = new HashSet<string>(StringComparer.Ordinal);
         private KanomjeenCorePlugin boundCore;
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
+        private KanomjeenHomesUi ui;
+        private KanomjeenHomesUi HomesUi => ui ?? (ui = new KanomjeenHomesUi(this));
+        internal UiService Ui => Core?.Ui;
         private Color MessageColor => UnturnedChat.GetColorFromName(Configuration.Instance.MessageColor ?? "cyan", Color.cyan);
 
         protected override void Load()
@@ -82,7 +85,7 @@ namespace Kanomjeen.Homes
             Say(player, "Created", record.Name);
         }
 
-        private void DeleteHome(UnturnedPlayer player, string name)
+        internal void DeleteHome(UnturnedPlayer player, string name)
         {
             if (!Require(player, "kanomjeen.home.set")) return;
             if (string.IsNullOrWhiteSpace(name)) { Say(player, "UsageDelete"); return; }
@@ -91,7 +94,7 @@ namespace Kanomjeen.Homes
             Say(player, "Deleted", name.Trim());
         }
 
-        private void TeleportHome(UnturnedPlayer player, string name)
+        internal void TeleportHome(UnturnedPlayer player, string name)
         {
             var home = store.Find(player.Id, name);
             if (home == null) { Say(player, "NotFound", name ?? "default"); return; }
@@ -104,7 +107,7 @@ namespace Kanomjeen.Homes
             StartCoroutine(TeleportRoutine(player, home));
         }
 
-        private void TrackHome(UnturnedPlayer player, string name)
+        internal void TrackHome(UnturnedPlayer player, string name)
         {
             var home = store.Find(player.Id, name);
             if (home == null) { Say(player, "NotFound", name ?? "default"); return; }
@@ -150,38 +153,25 @@ namespace Kanomjeen.Homes
             }
         }
 
-        private void ShowHomesUi(UnturnedPlayer player)
-        {
-            if (Core?.Ui == null || !Core.Ui.IsConfigured) return;
-            Core.Ui.Open(player, "homes", "KANOMJEEN • HOMES", "Travel is disabled during combat, raids and restricted objectives.");
-            var homes = store.Get(player.Id);
-            for (var i = 0; i < 6; i++)
-            {
-                var visible = i < homes.Count;
-                Core.Ui.SetVisible(player, "KJ_Home_Row_" + i, visible);
-                if (visible) Core.Ui.SetText(player, "KJ_Home_Name_" + i, homes[i].Name);
-            }
-        }
+        private void ShowHomesUi(UnturnedPlayer player) => HomesUi.Show(player);
 
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
             if (e?.Player == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_Homes") { ShowHomesUi(e.Player); return; }
-            if (e.Screen != "homes" || !Rate(e.Player, "home.ui", 0.5f)) return;
-            if (TryIndex(e.Button, "KJ_Home_Teleport_", out var index))
-            {
-                var homes = store.Get(e.Player.Id); if (index >= 0 && index < homes.Count) TeleportHome(e.Player, homes[index].Name); return;
-            }
-            if (TryIndex(e.Button, "KJ_Home_Track_", out index))
-            {
-                var homes = store.Get(e.Player.Id); if (index >= 0 && index < homes.Count) TrackHome(e.Player, homes[index].Name); return;
-            }
-            if (TryIndex(e.Button, "KJ_Home_Delete_", out index))
-            {
-                var homes = store.Get(e.Player.Id); if (index >= 0 && index < homes.Count) { DeleteHome(e.Player, homes[index].Name); ShowHomesUi(e.Player); } return;
-            }
-            if (e.Button == "KJ_Home_Add") Say(e.Player, "UiAddHint");
+            HomesUi.OnButton(e.Player, e.Screen, e.Button);
         }
+
+        // Surface used by KanomjeenHomesUi: display data plus the gameplay actions it routes to.
+        internal List<string> HomeNames(string playerId)
+        {
+            var names = new List<string>();
+            var homes = store.Get(playerId);
+            for (var i = 0; i < homes.Count; i++) names.Add(homes[i].Name);
+            return names;
+        }
+
+        internal bool AllowUiAction(UnturnedPlayer player) => Rate(player, "home.ui", 0.5f);
+        internal void HintAdd(UnturnedPlayer player) => Say(player, "UiAddHint");
 
         private int EffectiveLimit(UnturnedPlayer player)
         {
@@ -225,7 +215,6 @@ namespace Kanomjeen.Homes
         private void OnDisconnected(string playerId) { if (!string.IsNullOrEmpty(playerId)) damagedWarmups.Remove(playerId); }
         private void SaveStore() => store?.SaveIfDirty();
         private static string Tail(string[] args) => args == null || args.Length < 2 ? null : string.Join(" ", args, 1, args.Length - 1).Trim();
-        private static bool TryIndex(string value, string prefix, out int index) { index = -1; return value != null && value.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(value.Substring(prefix.Length), out index); }
 
         private string Reason(GuardFailure failure)
         {

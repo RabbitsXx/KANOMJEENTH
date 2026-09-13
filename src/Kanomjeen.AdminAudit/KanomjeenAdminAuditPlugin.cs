@@ -24,6 +24,9 @@ namespace Kanomjeen.AdminAudit
         private readonly List<string> auditBuffer = new List<string>();
         private string auditDirectory;
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
+        private KanomjeenAdminAuditUi ui;
+        private KanomjeenAdminAuditUi StaffUi => ui ?? (ui = new KanomjeenAdminAuditUi(this));
+        internal UiService Ui => Core?.Ui;
         private Color MessageColor => UnturnedChat.GetColorFromName(Configuration.Instance.MessageColor ?? "cyan", Color.cyan);
 
         protected override void Load()
@@ -190,19 +193,20 @@ namespace Kanomjeen.AdminAudit
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
             if (e?.Player == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_Admin")
-            {
-                if (!GameplayGuard.Has(e.Player, "kanomjeen.admin.inspect")) return;
-                Core.Ui.Open(e.Player, "admin", "KANOMJEEN • STAFF", "Fast tools. Targeted actions remain chat commands for auditability.");
-                Core.Ui.SetText(e.Player, "KJ_Admin_Name", e.Player.DisplayName);
-                Core.Ui.SetText(e.Player, "KJ_Admin_State", "God=" + e.Player.GodMode + "  Vanish=" + e.Player.VanishMode);
-                return;
-            }
-            if (e.Screen != "admin") return;
-            if (e.Button == "KJ_Admin_God") CommandGod(e.Player, new string[0]);
-            else if (e.Button == "KJ_Admin_Vanish") CommandVanish(e.Player, new string[0]);
-            Core.Ui.SetText(e.Player, "KJ_Admin_State", "God=" + e.Player.GodMode + "  Vanish=" + e.Player.VanishMode);
+            StaffUi.OnButton(e.Player, e.Screen, e.Button);
         }
+
+        // Surface used by KanomjeenAdminAuditUi: permission gate, staff snapshot and the toggles it routes to.
+        internal void ShowStaffUi(UnturnedPlayer player)
+        {
+            if (player?.Player == null || !AllowStaffUi(player)) return;
+            StaffUi.Show(player);
+        }
+
+        internal bool AllowStaffUi(UnturnedPlayer player) => GameplayGuard.Has(player, "kanomjeen.admin.inspect");
+        internal string AdminStateText(UnturnedPlayer player) => player == null ? string.Empty : "God=" + player.GodMode + "  Vanish=" + player.VanishMode;
+        internal void ToggleGod(UnturnedPlayer player) => CommandGod(player, new string[0]);
+        internal void ToggleVanish(UnturnedPlayer player) => CommandVanish(player, new string[0]);
 
         private void OnChatted(SteamPlayer steamPlayer, EChatMode mode, ref Color color, ref bool isRich, string message, ref bool isVisible)
         {

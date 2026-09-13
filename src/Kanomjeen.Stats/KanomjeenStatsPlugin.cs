@@ -22,6 +22,9 @@ namespace Kanomjeen.Stats
     {
         private StatsStore store;
         private KanomjeenCorePlugin boundCore;
+        private KanomjeenStatsUi ui;
+        private KanomjeenStatsUi StatsUi => ui ?? (ui = new KanomjeenStatsUi(this));
+        internal UiService Ui => Core?.Ui;
         private readonly Dictionary<string, DateTime> connectedUtc = new Dictionary<string, DateTime>(StringComparer.Ordinal);
         private readonly Dictionary<string, DateTime> lifeStartedUtc = new Dictionary<string, DateTime>(StringComparer.Ordinal);
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
@@ -76,8 +79,11 @@ namespace Kanomjeen.Stats
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
             if (e?.Player == null) return;
-            if (e.Screen == "main" && e.Button == "KJ_Main_Stats") Show(e.Player, e.Player);
+            StatsUi.OnButton(e.Player, e.Screen, e.Button);
         }
+
+        /// <summary>Entry point used by the UI layer for the main-menu Stats card and /stats.</summary>
+        internal void ShowStatsFor(UnturnedPlayer player) => Show(player, player);
 
         private bool TryBindCore()
         {
@@ -171,16 +177,18 @@ namespace Kanomjeen.Stats
             var kdr = data.Deaths == 0 ? data.Kills : (double)data.Kills / data.Deaths;
             Say(viewer, "Summary", target.DisplayName, data.Kills, data.Deaths, kdr.ToString("0.00"), data.ZombieKills, FormatDuration(playtime));
 
-            if (Core?.Ui == null || !Core.Ui.IsConfigured) return;
-            Core.Ui.Open(viewer, "stats", "KANOMJEEN • " + target.DisplayName, "Persistent survival statistics");
-            Core.Ui.SetText(viewer, "KJ_Stats_Kills", data.Kills.ToString());
-            Core.Ui.SetText(viewer, "KJ_Stats_Deaths", data.Deaths.ToString());
-            Core.Ui.SetText(viewer, "KJ_Stats_KDR", kdr.ToString("0.00"));
-            Core.Ui.SetText(viewer, "KJ_Stats_Zombies", data.ZombieKills.ToString());
-            Core.Ui.SetText(viewer, "KJ_Stats_Headshots", data.Headshots.ToString());
-            Core.Ui.SetText(viewer, "KJ_Stats_Playtime", FormatDuration(playtime));
-            Core.Ui.SetText(viewer, "KJ_Stats_LongestLife", FormatDuration(data.LongestLifeSeconds));
-            Core.Ui.SetText(viewer, "KJ_Stats_Airdrops", data.AirdropsCaptured.ToString());
+            StatsUi.Show(viewer, new StatSnapshot
+            {
+                DisplayName = target.DisplayName,
+                Kills = data.Kills.ToString(),
+                Deaths = data.Deaths.ToString(),
+                Kdr = kdr.ToString("0.00"),
+                Zombies = data.ZombieKills.ToString(),
+                Headshots = data.Headshots.ToString(),
+                Playtime = FormatDuration(playtime),
+                LongestLife = FormatDuration(data.LongestLifeSeconds),
+                Airdrops = data.AirdropsCaptured.ToString()
+            });
         }
 
         private void AccumulateSession(string playerId, string name, DateTime now, bool consume = true)

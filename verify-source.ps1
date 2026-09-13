@@ -30,5 +30,21 @@ if ($Asset -notmatch '(?m)^ID\s+51000\s*$') { throw 'Workshop Effect ID is not 5
 $Contract = Get-Content (Join-Path $Root 'workshop-ui/UI_CONTRACT.md') -Raw
 if ($Contract -notmatch '1\.0') { throw 'UI contract version 1.0 marker missing.' }
 
+# The prefab's screen containers and the server's screen list must agree. A screen the server
+# does not know about is never explicitly hidden, so it stays visible on top of the requested
+# screen (this shipped once and appeared in-game as two stacked screens).
+$BuilderPath = Join-Path $Root 'workshop-ui/UnityProject/Assets/KanomjeenUI/Editor/KanomjeenUiBuilder.cs'
+$UiServicePath = Join-Path $Root 'src/Kanomjeen.Core/Services/UiService.cs'
+
+$BuilderScreens = @(Select-String -Path $BuilderPath -Pattern 'Screen\(parent,\s*"([a-z]+)"\)' -AllMatches |
+  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+
+$ScreenBlock = [regex]::Match((Get-Content $UiServicePath -Raw), 'static readonly string\[\] Screens\s*=\s*\{(?<body>[^}]*)\}').Groups['body'].Value
+$ServerScreens = @([regex]::Matches($ScreenBlock, '"([a-z]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+
+if (($BuilderScreens -join ',') -ne ($ServerScreens -join ',')) {
+  throw "UI screen mismatch. builder=[$($BuilderScreens -join ', ')] server=[$($ServerScreens -join ', ')]"
+}
+
 Write-Host 'Kanomjeen source verification passed.' -ForegroundColor Green
 Write-Host 'This is structural verification only; run build.ps1 and runtime QA before production.' -ForegroundColor Yellow

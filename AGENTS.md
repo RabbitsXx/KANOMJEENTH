@@ -173,6 +173,9 @@ dotnet build src/Kanomjeen.Core/Kanomjeen.Core.csproj -c Release
 
 Rules:
 
+* `verify-source.sh` / `verify-source.ps1` also compare the Unity prefab's `Screen(parent, "...")`
+  names with `UiService.Screens` and fail the run when the two disagree. Keep them in sync when you
+  add a screen (§13 explains why this is the critical UI invariant).
 * `verify-source.sh` is a **structural** check only. A pass does not prove compilation or runtime
   correctness.
 * If a compile error comes from an Unturned/Rocket API member, **do not guess a signature**. Compare
@@ -427,6 +430,23 @@ Never describe the package as "production-ready" while any of those are unverifi
 * Still open: the in-client visual pass (Thai glyph rendering, bold synthesis, long-string wrapping)
   and everything in `QA_REPORT.md` that needs a live server.
 
+### 2026-09-14 — GUI desync fix (screens rendered stacked)
+
+An in-game screenshot showed the Waypoints screen drawn over the main menu: rows overlapped the main
+cards and `STOP TRACKING` sat on the STAFF card. Root cause and fixes are in §13 and the table below.
+
+* `UiService.Screens` was missing `"waypoints"`, so the Waypoints container was never hidden and the
+  main menu showed both screens at once. The list is now a single static field, and an unknown screen
+  name logs an error and falls back to `main`.
+* `UiService.Open` now always clear+sends a fresh Effect (reference-plugin behaviour); in-menu
+  navigation moved to the new `UiService.ShowScreen`.
+* Layout: the Waypoints help line no longer collides with the shell status line (`y 218 → 190`), rows
+  moved to `146 - i*54`, `STOP TRACKING` to `y -300`; the main-menu cards were resized to 370×112 and
+  re-spaced so the STAFF card stays inside the shell instead of poking out of the bottom.
+* `verify-source.sh` / `verify-source.ps1` gained the prefab-vs-server screen list check.
+* Re-exported bundle set (Unity 2022.3.62f3, Thai font still embedded): windows `139055`,
+  linux `138958`, mac `139173` bytes; `.hash` 61 bytes re-verified.
+
 ---
 
 ## 12. Working agreement for agents
@@ -455,3 +475,112 @@ Never describe the package as "production-ready" while any of those are unverifi
 * When something still needs a human with a client or server, say so explicitly instead of implying
   it passed.
 * Keep commits conventional and scoped (`feat:`, `fix:`, `docs:`, ...), matching the existing log.
+
+---
+
+## 13. Unturned GUI reliability rules (validated against a reference plugin)
+
+A third-party plugin plus its Workshop Effect were decompiled and studied because Kanomjeen shipped a
+UI bug where two screens rendered stacked on top of each other. The reference avoids that whole class
+of bug; the rules below are what it does, mapped onto Kanomjeen.
+
+### 13.1 What the reference implementation does
+
+1. **Sends a fresh Effect instance on every explicit open.** Its `ShowUI()` runs
+   `EffectManager.askEffectClearByID(effectId, steamID)` and then
+   `EffectManager.sendUIEffect(effectId, key, steamID, true)` *every time*, not only on the first
+   open. A client can hold a stale copy (plugin reload, dropped packet, older bundle), and a stale
+   copy keeps whatever visibility state it had.
+2. **Sets visibility for every container explicitly.** Right after the send it makes the target
+   screen visible and the others invisible *by name*, then fills text.
+3. **In-UI navigation never resends the Effect.** Category/page switches only re-send text and
+   visibility, so browsing never flickers.
+4. **Clears reusable rows in a loop before filling them** (all rows × all child names set invisible),
+   so no row can keep a previous player's data.
+5. **Tracks open sessions per SteamID** (`HashSet<CSteamID>`); hiding removes the entry and clears the
+   Effect, and progress pushes are only delivered to players in that set.
+6. **Matches button names by prefix + index with bounds checks**, and every handler re-reads the
+   authoritative server state before acting.
+7. **Wraps every UI method in try/catch + `Logger.LogError`**, so a UI failure can never break
+   gameplay.
+8. **Pushes custom artwork with `sendUIEffectImageURL`** instead of baking images into the bundle.
+
+### 13.2 How Kanomjeen implements the same rules
+
+| Rule | Kanomjeen implementation |
+| --- | --- |
+| Fresh instance on entry | `UiService.Open(...)` always clear+sends, wrapped in `UiGuard.Run`; the TPA request panel uses it so an incoming request can never render over a stale screen |
+| No resend while browsing | `UiService.ShowScreen(...)` — text/visibility only; falls back to `Open` when the player has no session, so commands and GUI clicks can share it |
+| Explicit container visibility | `FocusScreen()` fans out `KJ_Screen_*` visibility over `UiService.Screens`; an unknown screen name logs an error and falls back to `main` |
+| Rows cleared before fill | `UiService.HideRows(player, rowPrefix, count)` runs before every refresh in a feature's UI class |
+| Open-session tracking | `UiService.activeScreens` per SteamID; `Close` clears the Effect and the entry, and pushes are gated on `IsOpen` |
+| Prefix+index buttons | `UiGuard.TryParseIndex(button, prefix, out index)`, then the handler re-reads authoritative server state and bounds-checks before acting |
+| UI errors never break gameplay | `UiGuard.Run(...)` wraps every effect send and every UI entry point, logging instead of throwing |
+| Screen-list drift | `verify-source.sh` / `verify-source.ps1` fail when prefab screens and `UiService.Screens` disagree |
+
+### 13.3 Why the screen list is the critical invariant
+
+`KanomjeenUiBuilder` creates every `KJ_Screen_*` container **active**; the server is what hides the
+ones it does not want. A screen missing from the server's list is therefore never hidden and renders
+on top of the requested screen — exactly what shipped in the first Waypoints build: the server knew
+`main, tpa, homes, kits, stats, airdrop, admin, toast` but not `waypoints`, so opening the menu showed
+the main cards with the Waypoints rows and `STOP TRACKING` layered over them.
+
+Two guards exist now: the list lives in one static field and is cross-checked by `verify-source.*`,
+and an unknown screen name is logged and downgraded to `main`.
+
+### 13.4 Call-site convention (follow this when adding a screen)
+
+* Slash-command entry points and the TPA request modal use `Ui.Open(...)` (always a fresh instance).
+* Anything reachable from inside the open menu (main cards, post-action refreshes) uses
+  `Ui.ShowScreen(...)`.
+* Add the screen to `KanomjeenUiBuilder.Screen(...)` **and** `UiService.Screens`, run
+  `verify-source.sh`, rebuild the DLLs, re-export the bundle, then refresh `Kanomjeen_UI_Workshop/`.
+  Bump `UiContractVersion` and update `UI_CONTRACT.md` when element names change.
+
+### 13.5 Where UI code lives (one UI class per feature)
+
+Every feature keeps its client presentation out of its gameplay class. The gameplay plugin owns
+state, permissions, cooldowns and teleport rules; an adjacent `*Ui` class owns entry, refresh and
+button routing, and the plugin exposes a small internal surface for it.
+
+| Feature | UI class | Plugin surface it calls |
+| --- | --- | --- |
+| Core Waypoints | `Kanomjeen.Core/Waypoints/WaypointUi.cs` | `ShowWaypoints`, `WaypointLines`, `WaypointTrack/Delete/Stop` |
+| Homes | `KanomjeenHomesUi.cs` | `HomeNames`, `AllowUiAction`, `TrackHome`, `TeleportHome`, `DeleteHome`, `HintAdd` |
+| Kits | `KanomjeenKitsUi.cs` | `KitRows`, `AllowUiAction`, `ClaimKitByIndex` |
+| Stats | `KanomjeenStatsUi.cs` | `ShowStatsFor` (plugin formats `StatSnapshot`) |
+| TPA | `KanomjeenTpaUi.cs` | `AllowUiAction`, `AcceptLatest`, `DenyLatest`, `CancelOutgoing` |
+| Airdrops | `KanomjeenAirdropsUi.cs` | `RefreshAirdropUi` (plugin builds `AirdropView`) |
+| AdminAudit | `KanomjeenAdminAuditUi.cs` | `ShowStaffUi`, `AllowStaffUi`, `ToggleGod`, `ToggleVanish`, `AdminStateText` |
+
+Shared pieces live in `Kanomjeen.Core/Services`: `UiService` (session + screen focus), `UiGuard`
+(`Run` and `TryParseIndex`), and `UiRow` (one display-ready list row). Feature UI classes never touch
+`EffectManager` directly — only `UiService` does.
+
+Each gameplay plugin keeps `internal UiService Ui => Core?.Ui;` so its UI class can reach the service,
+and `OnUiButton(object sender, UiButtonEventArgs e)` is a one-line delegation into the UI class. The
+only direct `Ui.*` calls left in gameplay code are session-level `Close(player)` after a successful
+teleport/claim, which is intentional.
+
+Why this split: presentation code is where staleness bugs live, so it is kept in one place per
+feature, wrapped in `UiGuard.Run`, and given no ability to change gameplay by accident. Adding a
+screen means touching the UI class plus the two screen lists — never the teleport/permission logic.
+
+### 13.6 Reference material studied (2026-09-14)
+
+* `Supernovea.Achievement.dll` (obfuscated; analysed with ICSharpCode.Decompiler via a scratch
+  .NET 10 file-based app). GUI lives in `Supernovea.Achievement.UI.AchievementUI`, driven by one
+  Effect (`sendUIEffect(effectId, key: 4754, ...)`), button callbacks via
+  `EffectManager.onEffectButtonClicked`. To reproduce the study: decompile the DLL with
+  `ICSharpCode.Decompiler` (a `.NET 10` file-based app with `#:package ICSharpCode.Decompiler@*`
+  and a tolerant `UniversalAssemblyResolver` is enough); keep the output outside the repository and
+  delete it afterwards.
+* Workshop item `Supernovea RankQuest V2` — <https://steamcommunity.com/sharedfiles/filedetails/?id=3478575975>
+  (Effect asset, 1.03 MB).
+* Workshop item `3477290482` — <https://steamcommunity.com/sharedfiles/filedetails/?id=3477290482>
+  (Recorded as a second reference; Steam rate-limited every fetch attempt during this session, so
+  open it manually before relying on its contents.)
+
+Reference decompilation is **study material only**: do not copy third-party code into Kanomjeen (see
+`THIRD_PARTY_NOTICES.md`); re-implement behaviour independently.

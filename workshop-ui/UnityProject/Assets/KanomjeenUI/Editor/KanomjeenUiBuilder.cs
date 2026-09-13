@@ -103,29 +103,29 @@ namespace Kanomjeen.EditorTools
         private static void BuildMain(Transform parent)
         {
             var screen = Screen(parent, "main");
-            Label(screen, "KJ_Main_Intro", "SURVIVAL SERVICES", 13, Accent, new Vector2(-392, 184), new Vector2(350, 28), TextAnchor.MiddleLeft, FontStyle.Bold);
-            CardButton(screen, "KJ_Main_TPA", "TPA", "Player-to-player travel\nCombat / raid protected", -205, 95);
-            CardButton(screen, "KJ_Main_Waypoints", "WAYPOINTS", "Save and track destinations\nNative map-marker fallback", 205, 95);
-            CardButton(screen, "KJ_Main_Homes", "HOMES", "Track or teleport separately\nRestricted-zone aware", -205, -55);
-            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", 205, -55);
-            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", -205, -205);
-            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTemporary red marker", 205, -205);
-            CardButton(screen, "KJ_Main_Admin", "STAFF", "Permission restricted", 0, -330);
+            Label(screen, "KJ_Main_Intro", "SURVIVAL SERVICES", 13, Accent, new Vector2(-392, 180), new Vector2(350, 28), TextAnchor.MiddleLeft, FontStyle.Bold);
+            CardButton(screen, "KJ_Main_TPA", "TPA", "Player-to-player travel\nCombat / raid protected", -205, 108);
+            CardButton(screen, "KJ_Main_Waypoints", "WAYPOINTS", "Save and track destinations\nNative map-marker fallback", 205, 108);
+            CardButton(screen, "KJ_Main_Homes", "HOMES", "Track or teleport separately\nRestricted-zone aware", -205, -16);
+            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", 205, -16);
+            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", -205, -140);
+            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTemporary red marker", 205, -140);
+            CardButton(screen, "KJ_Main_Admin", "STAFF", "Permission restricted", 0, -272);
         }
 
         private static void BuildWaypoints(Transform parent)
         {
             var screen = Screen(parent, "waypoints");
-            Label(screen, "KJ_Waypoint_Help", "Use /wp add <name> at your position. Select TRACK to send the destination to Unturned's native map.", 14, Muted, new Vector2(0, 218), new Vector2(790, 34), TextAnchor.MiddleCenter, FontStyle.Normal);
+            Label(screen, "KJ_Waypoint_Help", "Use /wp add <name> at your position. Select TRACK to send the destination to Unturned's native map.", 14, Muted, new Vector2(0, 190), new Vector2(790, 34), TextAnchor.MiddleCenter, FontStyle.Normal);
             for (var i = 0; i < 8; i++)
             {
-                var y = 170 - (i * 56);
+                var y = 146 - (i * 54);
                 var row = Panel(screen, "KJ_Waypoint_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 48));
                 Label(row.transform, "KJ_Waypoint_Name_" + i, "WAYPOINT", 15, Text, new Vector2(-365, 0), new Vector2(430, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
                 Button(row.transform, "KJ_Waypoint_Track_" + i, "TRACK", new Vector2(225, 0), new Vector2(120, 40), Success, Text);
                 Button(row.transform, "KJ_Waypoint_Delete_" + i, "DELETE", new Vector2(330, 0), new Vector2(84, 40), Danger, Text);
             }
-            Button(screen, "KJ_Waypoint_Stop", "STOP TRACKING", new Vector2(0, -292), new Vector2(210, 44), Danger, Text);
+            Button(screen, "KJ_Waypoint_Stop", "STOP TRACKING", new Vector2(0, -300), new Vector2(210, 44), Danger, Text);
         }
 
         private static void BuildTpa(Transform parent)
@@ -227,7 +227,7 @@ namespace Kanomjeen.EditorTools
 
         private static void CardButton(Transform parent, string name, string title, string subtitle, float x, float y)
         {
-            var card = Button(parent, name, string.Empty, new Vector2(x, y), new Vector2(370, 125), Surface2, Text);
+            var card = Button(parent, name, string.Empty, new Vector2(x, y), new Vector2(370, 112), Surface2, Text);
             Label(card.transform, name + "_Title", title, 22, Text, new Vector2(-145, 25), new Vector2(280, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
             Label(card.transform, name + "_Subtitle", subtitle, 14, Muted, new Vector2(-145, -25), new Vector2(290, 52), TextAnchor.MiddleLeft, FontStyle.Normal);
             var marker = Panel(card.transform, name + "_Marker", Accent, new Vector2(-176, 0), new Vector2(4, 95));

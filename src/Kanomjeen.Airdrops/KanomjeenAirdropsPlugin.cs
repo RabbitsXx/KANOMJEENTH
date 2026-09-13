@@ -24,6 +24,9 @@ namespace Kanomjeen.Airdrops
         private AirdropSpawn activeSpawn;
         private const string DynamicZoneKey = "kanomjeen.airdrop.active";
         private KanomjeenCorePlugin Core => KanomjeenCorePlugin.Instance;
+        private KanomjeenAirdropsUi ui;
+        private KanomjeenAirdropsUi AirdropsUi => ui ?? (ui = new KanomjeenAirdropsUi(this));
+        internal UiService Ui => Core?.Ui;
         private Color MessageColor => UnturnedChat.GetColorFromName(Configuration.Instance.MessageColor ?? "yellow", Color.yellow);
 
         protected override void Load()
@@ -54,7 +57,7 @@ namespace Kanomjeen.Airdrops
             {
                 var distance = Vector3.Distance(player.Position, Position(activeSpawn));
                 Say(player, "Active", activeSpawn.Name, Math.Round(distance), Math.Ceiling((activeUntilUtc - DateTime.UtcNow).TotalSeconds));
-                ShowUi(player);
+                RefreshAirdropUi(player);
                 return;
             }
             if (!Configuration.Instance.AutoEnabled || Configuration.Instance.Spawns.Count == 0) { Say(player, "NotScheduled"); return; }
@@ -182,26 +185,40 @@ namespace Kanomjeen.Airdrops
 
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
-            if (e?.Player == null || e.Screen != "main" || e.Button != "KJ_Main_Airdrop") return;
-            if (activeSpawn != null && activeUntilUtc > DateTime.UtcNow) ShowUi(e.Player);
-            else
-            {
-                Core.Ui.Open(e.Player, "airdrop", "KANOMJEEN • AIRDROP", "No active objective. Automatic events depend on population and schedule.");
-                Core.Ui.SetText(e.Player, "KJ_Airdrop_Region", "NO ACTIVE DROP");
-                Core.Ui.SetText(e.Player, "KJ_Airdrop_Distance", "-");
-                Core.Ui.SetText(e.Player, "KJ_Airdrop_Timer", Math.Max(0, Math.Ceiling((nextDropUtc - DateTime.UtcNow).TotalSeconds)) + "s");
-                Core.Ui.SetText(e.Player, "KJ_Airdrop_State", "STANDBY");
-            }
+            if (e?.Player == null) return;
+            AirdropsUi.OnButton(e.Player, e.Screen, e.Button);
         }
 
-        private void ShowUi(UnturnedPlayer player)
+        /// <summary>Entry point used by the UI layer: present whatever the schedule currently holds.</summary>
+        internal void RefreshAirdropUi(UnturnedPlayer player)
         {
-            if (Core?.Ui == null || activeSpawn == null || activeUntilUtc <= DateTime.UtcNow) return;
-            Core.Ui.Open(player, "airdrop", "KANOMJEEN • AIRDROP", "PvP objective — TPA/Home disabled inside objective radius.");
-            Core.Ui.SetText(player, "KJ_Airdrop_Region", activeSpawn.Name);
-            Core.Ui.SetText(player, "KJ_Airdrop_Distance", Math.Round(Vector3.Distance(player.Position, Position(activeSpawn))) + "m");
-            Core.Ui.SetText(player, "KJ_Airdrop_Timer", Math.Ceiling((activeUntilUtc - DateTime.UtcNow).TotalSeconds) + "s");
-            Core.Ui.SetText(player, "KJ_Airdrop_State", "ACTIVE");
+            if (player == null) return;
+            AirdropsUi.Show(player, BuildView(player));
+        }
+
+        private AirdropView BuildView(UnturnedPlayer player)
+        {
+            var now = DateTime.UtcNow;
+            if (activeSpawn != null && activeUntilUtc > now)
+            {
+                return new AirdropView
+                {
+                    Active = true,
+                    Region = activeSpawn.Name,
+                    Distance = Math.Round(Vector3.Distance(player.Position, Position(activeSpawn))) + "m",
+                    Timer = Math.Ceiling((activeUntilUtc - now).TotalSeconds) + "s",
+                    State = "ACTIVE"
+                };
+            }
+
+            return new AirdropView
+            {
+                Active = false,
+                Region = "NO ACTIVE DROP",
+                Distance = "-",
+                Timer = Math.Max(0, Math.Ceiling((nextDropUtc - now).TotalSeconds)) + "s",
+                State = "STANDBY"
+            };
         }
 
         private void ScheduleNext()
