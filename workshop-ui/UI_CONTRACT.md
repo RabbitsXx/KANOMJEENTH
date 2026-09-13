@@ -16,6 +16,7 @@ Server requirements:
 ## Screen containers
 Exactly one normal screen is shown at a time:
 - `KJ_Screen_main`
+- `KJ_Screen_waypoints`
 - `KJ_Screen_tpa`
 - `KJ_Screen_homes`
 - `KJ_Screen_kits`
@@ -37,6 +38,7 @@ Exactly one normal screen is shown at a time:
 `KJ_Close` is handled by `Kanomjeen.Core.UiService`.
 
 ## Main menu buttons
+- `KJ_Main_Waypoints` -> Core opens the compact waypoint manager
 - `KJ_Main_TPA` -> TPA plugin opens TPA screen
 - `KJ_Main_Homes` -> Homes plugin opens Home list
 - `KJ_Main_Kits` -> Kits plugin opens available kits
@@ -65,6 +67,7 @@ When opening the TPA screen from Main without a request, `KJ_TPA_RequestPanel` i
 Rows 0..5:
 - `KJ_Home_Row_{n}`
 - `KJ_Home_Name_{n}`
+- `KJ_Home_Track_{n}`
 - `KJ_Home_Teleport_{n}`
 - `KJ_Home_Delete_{n}`
 
@@ -72,6 +75,18 @@ Other:
 - `KJ_Home_Add`
 
 `KJ_Home_Add` currently instructs the player to use `/home set <name>` so text entry remains server-chat based and auditable. Teleport/delete resolve `{n}` again against the current HomeStore before action.
+
+## Waypoints
+Rows 0..7:
+- `KJ_Waypoint_Row_{n}`
+- `KJ_Waypoint_Name_{n}`
+- `KJ_Waypoint_Track_{n}`
+- `KJ_Waypoint_Delete_{n}`
+
+Other:
+- `KJ_Waypoint_Stop`
+
+Create and rename input remains command-based (`/wp`) because a standard Workshop Effect cannot provide a trusted client module. Tracking uses Unturned's native map marker.
 
 ## Kits
 Rows 0..7:

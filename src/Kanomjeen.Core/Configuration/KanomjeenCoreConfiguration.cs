@@ -32,6 +32,12 @@ namespace Kanomjeen.Core.Configuration
         public ushort UiEffectId = 51000;
         public short UiKey = 23001;
         public string UiContractVersion = "1.0";
+        public bool EnableWaypoints = true;
+        public string WaypointMode = "FallbackNativeMarker";
+        public int WaypointSavedLimit = 10;
+        public int WaypointMaximumPermissionLimit = 30;
+        public float WaypointMaximumCoordinateMagnitude = 65536f;
+        public float WaypointSaveIntervalSeconds = 30f;
         public string MessageColor = "cyan";
         public List<ZoneRule> Zones = new List<ZoneRule>();
 
@@ -47,6 +53,12 @@ namespace Kanomjeen.Core.Configuration
             UiEffectId = 51000;
             UiKey = 23001;
             UiContractVersion = "1.0";
+            EnableWaypoints = true;
+            WaypointMode = "FallbackNativeMarker";
+            WaypointSavedLimit = 10;
+            WaypointMaximumPermissionLimit = 30;
+            WaypointMaximumCoordinateMagnitude = 65536f;
+            WaypointSaveIntervalSeconds = 30f;
             MessageColor = "cyan";
             Zones = new List<ZoneRule>();
         }

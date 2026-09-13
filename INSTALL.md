@@ -37,6 +37,7 @@ Stop the server and review every generated configuration before opening the serv
 Important first-boot checks:
 - Core `UiEffectId` matches Workshop Effect ID `51000`.
 - Core `UiKey` remains unique for this UI session.
+- Core `WaypointMode` remains `FallbackNativeMarker` unless a separately distributed, supported client module is installed.
 - Core Zones are populated for any California 2 deadzones/high-tier/restricted areas you want to protect.
 - Home/TPA cooldowns fit your wipe/travel balance.
 - Kit definitions contain only intended item IDs.
@@ -81,6 +82,7 @@ Verify with:
 ## 6. Configure permissions
 Use `PERMISSIONS.md` as the policy matrix. At minimum normal players generally need:
 - `kanomjeen.tpa.use`
+- `kanomjeen.waypoint.use`
 - `kanomjeen.home.use`
 - `kanomjeen.home.set`
 - `kanomjeen.kit.starter`
@@ -95,6 +97,8 @@ Add that Workshop item to the dedicated server's Workshop content list so connec
 Test `/menu` only after the client content is installed.
 
 If UI content is temporarily unavailable, chat commands remain the operational fallback for gameplay systems.
+
+Waypoint commands: `/wp add <name>`, `/wp list`, `/wp track <number>`, `/wp stop`, `/wp rename <number> <new name>`, `/wp delete <number>`, and `/home track <home name>`.
 
 ## 8. Staging test
 Use at least two non-admin test accounts plus one staff account.

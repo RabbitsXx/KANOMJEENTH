@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Kanomjeen.Core;
 using Kanomjeen.Core.Services;
+using Kanomjeen.Core.Waypoints;
 using Rocket.API;
 using Rocket.API.Collections;
 using Rocket.Core.Commands;
@@ -63,6 +64,7 @@ namespace Kanomjeen.TPA
             var request = store.NewestIncoming(me.Id, Join(args));
             if (request == null) { Say(me, "NoRequest"); return; }
             store.Remove(request);
+            RemoveRequestWaypoints(request);
 
             var requester = Core?.Players.FindById(request.RequesterId);
             var target = Core?.Players.FindById(request.TargetId);
@@ -95,6 +97,7 @@ namespace Kanomjeen.TPA
             var request = store.NewestIncoming(me.Id, Join(args));
             if (request == null) { Say(me, "NoRequest"); return; }
             store.Remove(request);
+            RemoveRequestWaypoints(request);
             Say(Core.Players.FindById(request.RequesterId), "Denied", me.DisplayName);
             Say(me, "DeniedYou");
             Core.Ui.Close(me);
@@ -109,6 +112,7 @@ namespace Kanomjeen.TPA
             if (removed.Count == 0) { Say(me, "NoOutgoing"); return; }
             foreach (var request in removed)
             {
+                RemoveRequestWaypoints(request);
                 var target = Core.Players.FindById(request.TargetId);
                 if (target != null) { Say(target, "CancelledBy", me.DisplayName); Core.Ui.Close(target); }
             }
@@ -158,6 +162,7 @@ namespace Kanomjeen.TPA
                 ExpiresUtc = DateTime.UtcNow.AddSeconds(timeout)
             };
             store.Add(request);
+            Core.Waypoints?.UpsertFeature(me.Id, "TPA: " + target.DisplayName, target.Position, WaypointIcon.Safezone, WaypointColor.Cyan, WaypointVisibility.Owner, WaypointSource.Tpa, RequestKey(request), request.ExpiresUtc);
             Say(me, "Sent", target.DisplayName, Math.Round(timeout));
             Say(target, direction == TpaDirection.ToTarget ? "Received" : "ReceivedHere", me.DisplayName);
             ShowIncomingUi(target, request, timeout);
@@ -273,7 +278,7 @@ namespace Kanomjeen.TPA
         private void OnCorePlayerDamaged(string playerId) { if (!string.IsNullOrEmpty(playerId)) damagedWarmups.Add(playerId); }
         private void OnCorePlayerDisconnected(string playerId)
         {
-            store.RemoveTouching(playerId);
+            foreach (var request in store.RemoveTouching(playerId)) RemoveRequestWaypoints(request);
             damagedWarmups.Remove(playerId);
         }
 
@@ -281,6 +286,7 @@ namespace Kanomjeen.TPA
         {
             foreach (var request in store.Sweep(DateTime.UtcNow))
             {
+                RemoveRequestWaypoints(request);
                 Say(Core?.Players.FindById(request.RequesterId), "Expired");
                 var target = Core?.Players.FindById(request.TargetId);
                 if (target != null) { Say(target, "Expired"); Core.Ui.Close(target); }
@@ -303,6 +309,16 @@ namespace Kanomjeen.TPA
 
         private static UnturnedPlayer Player(IRocketPlayer caller) => caller as UnturnedPlayer;
         private static string Join(string[] args) => args == null || args.Length == 0 ? null : string.Join(" ", args).Trim();
+        private static string RequestKey(TpaRequest request) => request.RequesterId + ":" + request.TargetId;
+        private void RemoveRequestWaypoints(TpaRequest request)
+        {
+            if (request == null || Core?.Waypoints == null) return;
+            var key = RequestKey(request);
+            Core.Waypoints.RemoveFeature(request.RequesterId, WaypointSource.Tpa, key);
+            Core.Waypoints.RemoveFeature(request.TargetId, WaypointSource.Tpa, key);
+            var requester = Core.Players.FindById(request.RequesterId); if (requester != null) Core.Waypoints.Sync(requester);
+            var target = Core.Players.FindById(request.TargetId); if (target != null) Core.Waypoints.Sync(target);
+        }
 
         private string FailureText(GuardFailure failure)
         {

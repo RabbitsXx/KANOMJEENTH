@@ -61,6 +61,7 @@ namespace Kanomjeen.EditorTools
             Label(shell.transform, "KJ_ContractVersion", "1.0", 11, Muted, new Vector2(424, -325), new Vector2(70, 22), TextAnchor.MiddleRight, FontStyle.Normal);
 
             BuildMain(shell.transform);
+            BuildWaypoints(shell.transform);
             BuildTpa(shell.transform);
             BuildHomes(shell.transform);
             BuildKits(shell.transform);
@@ -104,11 +105,27 @@ namespace Kanomjeen.EditorTools
             var screen = Screen(parent, "main");
             Label(screen, "KJ_Main_Intro", "SURVIVAL SERVICES", 13, Accent, new Vector2(-392, 184), new Vector2(350, 28), TextAnchor.MiddleLeft, FontStyle.Bold);
             CardButton(screen, "KJ_Main_TPA", "TPA", "Player-to-player travel\nCombat / raid protected", -205, 95);
-            CardButton(screen, "KJ_Main_Homes", "HOMES", "Persistent personal homes\nRestricted-zone aware", 205, 95);
-            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", -205, -55);
-            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", 205, -55);
-            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTravel blocked in radius", -205, -205);
-            CardButton(screen, "KJ_Main_Admin", "STAFF", "Moderation quick tools\nPermission restricted", 205, -205);
+            CardButton(screen, "KJ_Main_Waypoints", "WAYPOINTS", "Save and track destinations\nNative map-marker fallback", 205, 95);
+            CardButton(screen, "KJ_Main_Homes", "HOMES", "Track or teleport separately\nRestricted-zone aware", -205, -55);
+            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", 205, -55);
+            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", -205, -205);
+            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTemporary red marker", 205, -205);
+            CardButton(screen, "KJ_Main_Admin", "STAFF", "Permission restricted", 0, -330);
+        }
+
+        private static void BuildWaypoints(Transform parent)
+        {
+            var screen = Screen(parent, "waypoints");
+            Label(screen, "KJ_Waypoint_Help", "Use /wp add <name> at your position. Select TRACK to send the destination to Unturned's native map.", 14, Muted, new Vector2(0, 218), new Vector2(790, 34), TextAnchor.MiddleCenter, FontStyle.Normal);
+            for (var i = 0; i < 8; i++)
+            {
+                var y = 170 - (i * 56);
+                var row = Panel(screen, "KJ_Waypoint_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 48));
+                Label(row.transform, "KJ_Waypoint_Name_" + i, "WAYPOINT", 15, Text, new Vector2(-365, 0), new Vector2(430, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
+                Button(row.transform, "KJ_Waypoint_Track_" + i, "TRACK", new Vector2(225, 0), new Vector2(120, 40), Success, Text);
+                Button(row.transform, "KJ_Waypoint_Delete_" + i, "DELETE", new Vector2(330, 0), new Vector2(84, 40), Danger, Text);
+            }
+            Button(screen, "KJ_Waypoint_Stop", "STOP TRACKING", new Vector2(0, -292), new Vector2(210, 44), Danger, Text);
         }
 
         private static void BuildTpa(Transform parent)
@@ -132,8 +149,9 @@ namespace Kanomjeen.EditorTools
                 var y = 170 - (i * 74);
                 var row = Panel(screen, "KJ_Home_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 60));
                 Label(row.transform, "KJ_Home_Name_" + i, "HOME " + (i + 1), 17, Text, new Vector2(-280, 0), new Vector2(220, 40), TextAnchor.MiddleLeft, FontStyle.Bold);
-                Button(row.transform, "KJ_Home_Teleport_" + i, "TELEPORT", new Vector2(150, 0), new Vector2(160, 40), Accent, new Color32(20, 20, 20, 255));
-                Button(row.transform, "KJ_Home_Delete_" + i, "DELETE", new Vector2(310, 0), new Vector2(120, 40), Danger, Text);
+                Button(row.transform, "KJ_Home_Track_" + i, "TRACK", new Vector2(100, 0), new Vector2(100, 40), Success, Text);
+                Button(row.transform, "KJ_Home_Teleport_" + i, "TELEPORT", new Vector2(220, 0), new Vector2(130, 40), Accent, new Color32(20, 20, 20, 255));
+                Button(row.transform, "KJ_Home_Delete_" + i, "DELETE", new Vector2(335, 0), new Vector2(90, 40), Danger, Text);
             }
             Button(screen, "KJ_Home_Add", "+ CREATE HOME", new Vector2(0, -286), new Vector2(220, 44), Surface2, Text);
         }

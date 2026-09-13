@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using Kanomjeen.Core;
 using Kanomjeen.Core.Services;
+using Kanomjeen.Core.Waypoints;
 using Rocket.API;
 using Rocket.API.Collections;
 using Rocket.Core.Commands;
@@ -46,7 +47,7 @@ namespace Kanomjeen.Homes
             Logger.Log("[Kanomjeen.Homes] Unloaded.");
         }
 
-        [RocketCommand("home", "Teleport to or manage homes", "[name] | set <name> | delete <name>", AllowedCaller.Player)]
+        [RocketCommand("home", "Teleport to or manage homes", "[name] | set <name> | track <name> | delete <name>", AllowedCaller.Player)]
         public void CommandHome(IRocketPlayer caller, string[] args)
         {
             var player = caller as UnturnedPlayer; if (player == null) return;
@@ -54,6 +55,7 @@ namespace Kanomjeen.Homes
             if (!Require(player, "kanomjeen.home.use")) return;
             if (!Rate(player, "home.command")) return;
             if (args != null && args.Length > 0 && string.Equals(args[0], "set", StringComparison.OrdinalIgnoreCase)) { SetHome(player, Tail(args)); return; }
+            if (args != null && args.Length > 0 && string.Equals(args[0], "track", StringComparison.OrdinalIgnoreCase)) { TrackHome(player, Tail(args)); return; }
             if (args != null && args.Length > 0 && (string.Equals(args[0], "delete", StringComparison.OrdinalIgnoreCase) || string.Equals(args[0], "del", StringComparison.OrdinalIgnoreCase))) { DeleteHome(player, Tail(args)); return; }
             TeleportHome(player, args == null || args.Length == 0 ? null : string.Join(" ", args));
         }
@@ -85,6 +87,7 @@ namespace Kanomjeen.Homes
             if (!Require(player, "kanomjeen.home.set")) return;
             if (string.IsNullOrWhiteSpace(name)) { Say(player, "UsageDelete"); return; }
             if (!store.Delete(player.Id, name.Trim())) { Say(player, "NotFound", name); return; }
+            Core?.Waypoints?.RemoveFeatureAndSync(player, WaypointSource.Home, name.Trim());
             Say(player, "Deleted", name.Trim());
         }
 
@@ -99,6 +102,15 @@ namespace Kanomjeen.Homes
             if (remaining > TimeSpan.Zero && !GameplayGuard.Has(player, "kanomjeen.home.bypass.cooldown")) { Say(player, "Cooldown", Math.Ceiling(remaining.TotalSeconds)); return; }
             if (!Core.Teleports.TryAcquire(player.Id)) { Say(player, "TeleportBusy"); return; }
             StartCoroutine(TeleportRoutine(player, home));
+        }
+
+        private void TrackHome(UnturnedPlayer player, string name)
+        {
+            var home = store.Find(player.Id, name);
+            if (home == null) { Say(player, "NotFound", name ?? "default"); return; }
+            var waypoint = Core?.Waypoints?.UpsertFeature(player.Id, home.Name, new Vector3(home.X, home.Y, home.Z), WaypointIcon.Home, WaypointColor.Gold, WaypointVisibility.Owner, WaypointSource.Home, home.Name, DateTime.MinValue);
+            if (waypoint == null || !Core.Waypoints.Track(player, waypoint.Id)) { Say(player, "TrackFailed"); return; }
+            Say(player, "Tracked", home.Name);
         }
 
         private IEnumerator TeleportRoutine(UnturnedPlayer player, HomeRecord home)
@@ -159,6 +171,10 @@ namespace Kanomjeen.Homes
             if (TryIndex(e.Button, "KJ_Home_Teleport_", out var index))
             {
                 var homes = store.Get(e.Player.Id); if (index >= 0 && index < homes.Count) TeleportHome(e.Player, homes[index].Name); return;
+            }
+            if (TryIndex(e.Button, "KJ_Home_Track_", out index))
+            {
+                var homes = store.Get(e.Player.Id); if (index >= 0 && index < homes.Count) TrackHome(e.Player, homes[index].Name); return;
             }
             if (TryIndex(e.Button, "KJ_Home_Delete_", out index))
             {
@@ -228,6 +244,7 @@ namespace Kanomjeen.Homes
             { "UsageSet", "Usage: /home set <name> (max 24 characters)" }, { "UsageDelete", "Usage: /home delete <name>" }, { "Created", "Home '{0}' created." }, { "Deleted", "Home '{0}' deleted." },
             { "Duplicate", "A home with that name already exists." }, { "Limit", "You reached your home limit ({0})." }, { "NotFound", "Home '{0}' was not found." }, { "Blocked", "Home action blocked: {0}." },
             { "Cooldown", "Home cooldown: {0}s remaining." }, { "TeleportBusy", "You already have a teleport warmup in progress." }, { "CoreUnavailable", "Kanomjeen.Core is not ready yet. Try again shortly." }, { "Warmup", "Teleporting to '{0}' in {1}s. Do not move or take damage." }, { "CancelDamage", "Home teleport cancelled because you took damage." },
+            { "Tracked", "Tracking home '{0}' on the native map." }, { "TrackFailed", "Home could not be tracked." },
             { "CancelMove", "Home teleport cancelled because you moved." }, { "CancelDeath", "Home teleport cancelled because you died." }, { "Failed", "Home teleport failed." }, { "Teleported", "Teleported to home '{0}'." },
             { "RateLimit", "Please wait {0}s before doing that again." }, { "UiAddHint", "Create a home with /home set <name>." }
         };

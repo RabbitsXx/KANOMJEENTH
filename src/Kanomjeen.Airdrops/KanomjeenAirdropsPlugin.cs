@@ -2,6 +2,7 @@ using System;
 using Kanomjeen.Core;
 using Kanomjeen.Core.Configuration;
 using Kanomjeen.Core.Services;
+using Kanomjeen.Core.Waypoints;
 using Rocket.API;
 using Rocket.API.Collections;
 using Rocket.Core.Commands;
@@ -39,6 +40,7 @@ namespace Kanomjeen.Airdrops
             CancelInvoke();
             UnbindCore();
             Core?.Zones.RemoveDynamic(DynamicZoneKey);
+            Core?.Waypoints?.RemoveFeature(null, WaypointSource.Airdrop, DynamicZoneKey);
             activeSpawn = null;
             Logger.Log("[Kanomjeen.Airdrops] Unloaded.");
         }
@@ -110,6 +112,7 @@ namespace Kanomjeen.Airdrops
             if (activeSpawn != null && activeUntilUtc <= now)
             {
                 Core?.Zones.RemoveDynamic(DynamicZoneKey);
+                Core?.Waypoints?.RemoveFeature(null, WaypointSource.Airdrop, DynamicZoneKey);
                 activeSpawn = null;
                 activeUntilUtc = DateTime.MinValue;
                 UnturnedChat.Say(Translate("ObjectiveEnded"), MessageColor);
@@ -143,6 +146,7 @@ namespace Kanomjeen.Airdrops
                 BlockBuild = Configuration.Instance.BlockBuildInObjective,
                 AirdropObjective = true
             });
+            Core?.Waypoints?.UpsertFeature(null, "Airdrop: " + spawn.Name, position, WaypointIcon.Crate, WaypointColor.Red, WaypointVisibility.Everyone, WaypointSource.Airdrop, DynamicZoneKey, activeUntilUtc, WaypointOwnerType.Event);
 
             UnturnedChat.Say(Translate("Incoming", spawn.Name), MessageColor);
             ScheduleNext();

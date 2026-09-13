@@ -37,12 +37,15 @@ Inspect the prefab hierarchy and confirm at minimum:
 - `KJ_Root`
 - `KJ_Close`
 - `KJ_Screen_main`
+- `KJ_Screen_waypoints`
 - `KJ_Screen_tpa`
 - `KJ_Screen_homes`
 - `KJ_Screen_kits`
 - `KJ_Screen_stats`
 - `KJ_Screen_airdrop`
 - `KJ_Screen_admin`
+
+The Waypoints screen contains eight reusable rows named `KJ_Waypoint_Row_0` through `_7`, matching the Track/Delete callbacks in `UI_CONTRACT.md`.
 
 Compare all interactive names against `UI_CONTRACT.md`.
 

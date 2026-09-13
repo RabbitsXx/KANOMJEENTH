@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Kanomjeen.Core.Configuration;
 using Kanomjeen.Core.Services;
+using Kanomjeen.Core.Waypoints;
 using Rocket.API;
 using Rocket.Core.Commands;
 using Logger = Rocket.Core.Logging.Logger;
@@ -27,6 +28,7 @@ namespace Kanomjeen.Core
         public GameplayGuard Guard { get; private set; }
         public PlayerResolver Players { get; private set; }
         public UiService Ui { get; private set; }
+        public WaypointService Waypoints { get; private set; }
 
         public event Action<string> PlayerDamaged;
         public event Action<string> PlayerDisconnected;
@@ -46,23 +48,29 @@ namespace Kanomjeen.Core
 
             var baseDir = Path.GetDirectoryName(typeof(KanomjeenCorePlugin).Assembly.Location) ?? ".";
             Cooldowns = new PersistentCooldownService(Path.Combine(baseDir, "Kanomjeen.Core.cooldowns.xml"));
+            if (Configuration.Instance.EnableWaypoints)
+                Waypoints = new WaypointService(Path.Combine(baseDir, "Kanomjeen.Core.waypoints.xml"), () => Configuration.Instance);
             Ui = new UiService(Configuration.Instance.EnableUi ? Configuration.Instance.UiEffectId : (ushort)0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
             Ui.Subscribe();
+            Ui.ButtonClicked += OnUiButton;
 
             U.Events.OnPlayerDisconnected += OnPlayerDisconnected;
+            U.Events.OnPlayerConnected += OnPlayerConnected;
             DamageTool.playerDamaged += OnPlayerDamaged;
             BarricadeManager.onDamageBarricadeRequested += OnBarricadeDamage;
             StructureManager.onDamageStructureRequested += OnStructureDamage;
 
             var flush = Math.Max(10f, Configuration.Instance.PersistenceFlushSeconds);
             InvokeRepeating(nameof(FlushPersistence), flush, flush);
-            Logger.Log("[Kanomjeen.Core] Loaded: combat, raid, zones, cooldown persistence, player resolver and UI bridge.");
+            if (Waypoints != null) InvokeRepeating(nameof(SweepWaypoints), 5f, 5f);
+            Logger.Log("[Kanomjeen.Core] Waypoints enabled in " + Configuration.Instance.WaypointMode + " mode. Native Unturned map markers are used; no client minimap module is installed.");
         }
 
         protected override void Unload()
         {
             CancelInvoke();
             U.Events.OnPlayerDisconnected -= OnPlayerDisconnected;
+            U.Events.OnPlayerConnected -= OnPlayerConnected;
             DamageTool.playerDamaged -= OnPlayerDamaged;
             BarricadeManager.onDamageBarricadeRequested -= OnBarricadeDamage;
             StructureManager.onDamageStructureRequested -= OnStructureDamage;
@@ -78,14 +86,17 @@ namespace Kanomjeen.Core
                     if (player?.Player != null) Ui.Close(player);
                 }
                 Ui.Unsubscribe();
+                Ui.ButtonClicked -= OnUiButton;
             }
 
             Cooldowns?.SaveIfDirty();
+            Waypoints?.Save();
 
             RateLimiter?.Clear();
             Teleports?.Clear();
             PlayerStates?.Clear();
             Ui = null;
+            Waypoints = null;
             Cooldowns = null;
             Teleports = null;
             Guard = null;
@@ -107,7 +118,76 @@ namespace Kanomjeen.Core
             Ui.SetVisible(player, "KJ_Main_Admin", GameplayGuard.Has(player, "kanomjeen.admin.inspect"));
         }
 
-        private void FlushPersistence() => Cooldowns?.SaveIfDirty();
+        [RocketCommand("waypoint", "Manage personal waypoints", "add <name> | list | track <number> | stop | rename <number> <name> | delete <number>", AllowedCaller.Player)]
+        [RocketCommandAlias("wp")]
+        public void CommandWaypoint(IRocketPlayer caller, string[] args)
+        {
+            var player = caller as UnturnedPlayer;
+            if (player?.Player == null || Waypoints == null) return;
+            if (!GameplayGuard.Has(player, "kanomjeen.waypoint.use")) { Say(player, "You do not have waypoint permission."); return; }
+            var action = args != null && args.Length > 0 ? args[0].ToLowerInvariant() : "list";
+            if (action == "add")
+            {
+                var name = JoinTail(args, 1);
+                var created = Waypoints.CreatePlayer(player, name);
+                Say(player, created == null ? "Could not create waypoint. Check the name and your saved limit." : "Waypoint created: " + created.Name);
+                ShowWaypoints(player); return;
+            }
+            if (action == "stop") { Waypoints.StopTracking(player); Say(player, "Waypoint tracking stopped."); return; }
+            if (action == "track" || action == "delete" || action == "rename")
+            {
+                if (args.Length < 2 || !int.TryParse(args[1], out var number)) { Say(player, "Use /wp " + action + " <number>" + (action == "rename" ? " <name>" : "")); return; }
+                var list = Waypoints.GetVisible(player);
+                var index = number - 1;
+                if (index < 0 || index >= list.Count) { Say(player, "Waypoint number not found."); return; }
+                var ok = action == "track" ? Waypoints.Track(player, list[index].Id)
+                    : action == "delete" ? Waypoints.Delete(player, list[index].Id)
+                    : Waypoints.Rename(player, list[index].Id, JoinTail(args, 2));
+                Say(player, ok ? "Waypoint updated." : "Waypoint action was rejected.");
+                ShowWaypoints(player); return;
+            }
+            ShowWaypoints(player);
+        }
+
+        private void ShowWaypoints(UnturnedPlayer player)
+        {
+            var list = Waypoints.GetVisible(player);
+            if (Ui?.IsConfigured == true)
+            {
+                Ui.Open(player, "waypoints", "KANOMJEEN • WAYPOINTS", "Fallback mode: the tracked destination uses Unturned's native map marker.");
+                for (var i = 0; i < 8; i++)
+                {
+                    var visible = i < list.Count;
+                    Ui.SetVisible(player, "KJ_Waypoint_Row_" + i, visible);
+                    if (visible) Ui.SetText(player, "KJ_Waypoint_Name_" + i, (i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? "  [TRACKED]" : ""));
+                }
+            }
+            Say(player, "Waypoints: " + list.Count + "/" + Waypoints.EffectiveLimit(player));
+            for (var i = 0; i < list.Count; i++) Say(player, (i + 1) + ". " + list[i].Name + (Waypoints.IsTracked(player.Id, list[i].Id) ? " [tracked]" : ""));
+        }
+
+        private void OnUiButton(object sender, UiButtonEventArgs e)
+        {
+            if (e?.Player == null || Waypoints == null) return;
+            if (e.Screen == "main" && e.Button == "KJ_Main_Waypoints") { ShowWaypoints(e.Player); return; }
+            if (e.Screen != "waypoints") return;
+            if (e.Button == "KJ_Waypoint_Stop") { Waypoints.StopTracking(e.Player); ShowWaypoints(e.Player); return; }
+            if (TryButtonIndex(e.Button, "KJ_Waypoint_Track_", out var i))
+            {
+                var list = Waypoints.GetVisible(e.Player); if (i < list.Count) Waypoints.Track(e.Player, list[i].Id); ShowWaypoints(e.Player);
+            }
+            else if (TryButtonIndex(e.Button, "KJ_Waypoint_Delete_", out i))
+            {
+                var list = Waypoints.GetVisible(e.Player); if (i < list.Count) Waypoints.Delete(e.Player, list[i].Id); ShowWaypoints(e.Player);
+            }
+        }
+
+        private static bool TryButtonIndex(string value, string prefix, out int index) { index = -1; return value != null && value.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(value.Substring(prefix.Length), out index); }
+        private static string JoinTail(string[] args, int start) => args == null || args.Length <= start ? null : string.Join(" ", args, start, args.Length - start).Trim();
+        private static void Say(UnturnedPlayer player, string text) { if (player != null) Rocket.Unturned.Chat.UnturnedChat.Say(player, text, Color.cyan); }
+
+        private void FlushPersistence() { Cooldowns?.SaveIfDirty(); Waypoints?.SaveIfDirty(); }
+        private void SweepWaypoints() { if (Waypoints == null) return; Waypoints.SweepExpired(); foreach (var steamPlayer in Provider.clients) Waypoints.Sync(UnturnedPlayer.FromSteamPlayer(steamPlayer)); }
 
         private void OnPlayerDisconnected(UnturnedPlayer player)
         {
@@ -118,6 +198,8 @@ namespace Kanomjeen.Core
             Teleports?.Release(player.Id);
             PlayerStates?.Remove(player.Id);
         }
+
+        private void OnPlayerConnected(UnturnedPlayer player) { Waypoints?.Sync(player); }
 
         private void OnPlayerDamaged(Player nativePlayer, ref EDeathCause cause, ref ELimb limb, ref CSteamID killerId,
             ref Vector3 direction, ref float damage, ref float times, ref bool canDamage)
@@ -165,6 +247,10 @@ namespace Kanomjeen.Core
             if (config.CommandRateLimitSeconds < 0.1f) config.CommandRateLimitSeconds = 1.5f;
             if (config.TeleportMovementToleranceMeters < 0.1f) config.TeleportMovementToleranceMeters = 0.5f;
             if (config.PersistenceFlushSeconds < 10f) config.PersistenceFlushSeconds = 30f;
+            if (config.WaypointSavedLimit < 1) config.WaypointSavedLimit = 10;
+            if (config.WaypointMaximumPermissionLimit < config.WaypointSavedLimit) config.WaypointMaximumPermissionLimit = config.WaypointSavedLimit;
+            if (config.WaypointSaveIntervalSeconds < 10f) config.WaypointSaveIntervalSeconds = 30f;
+            config.WaypointMode = "FallbackNativeMarker";
             if (config.Zones == null) config.Zones = new System.Collections.Generic.List<ZoneRule>();
             Configuration.Save();
         }

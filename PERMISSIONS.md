@@ -6,6 +6,7 @@ All new permissions use the `kanomjeen.*` namespace.
 
 ### default
 Recommended player permissions:
+- `kanomjeen.waypoint.use`
 - `kanomjeen.tpa.use`
 - `kanomjeen.home.use`
 - `kanomjeen.home.set`
@@ -18,6 +19,7 @@ Optional if you want `/tpahere` for everyone:
 VIP should improve convenience without bypassing PvP/raid safety.
 
 Possible additions:
+- `kanomjeen.waypoint.limit.20`
 - `kanomjeen.home.limit.3`
 - custom additional kit permission for a non-P2W utility kit
 
@@ -58,6 +60,13 @@ Rocket admins are treated as bypass-capable by `GameplayGuard` where applicable.
 - `kanomjeen.tpa.bypass.zone` — bypass configured/dynamic zone gate.
 
 Combat/raid/zone bypasses should be staff-only unless you intentionally want to weaken survival balance.
+
+## Waypoints
+- `kanomjeen.waypoint.use` — create, list, track, rename and delete personal waypoints.
+- `kanomjeen.waypoint.limit.11` through `kanomjeen.waypoint.limit.30` — raises the saved waypoint limit.
+- `kanomjeen.waypoint.staff` — view staff-visible/global markers.
+
+The server-only deployment uses `FallbackNativeMarker`: one selected destination is sent to Unturned's native map marker. It does not provide a rotating client minimap or an M hotkey.
 
 ## Homes
 - `kanomjeen.home.use` — list/use homes.
