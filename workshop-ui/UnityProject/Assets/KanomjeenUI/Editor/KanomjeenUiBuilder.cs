@@ -80,10 +80,12 @@ namespace Kanomjeen.EditorTools
         [MenuItem("Kanomjeen/Export Workshop UI Master Bundle")]
         public static void ExportMasterBundle()
         {
+            Build();
+
             var importer = AssetImporter.GetAtPath(OutputPrefab);
             if (importer == null)
             {
-                Debug.LogError("[Kanomjeen] Prefab not found. Build the Workshop UI Prefab first.");
+                Debug.LogError("[Kanomjeen] Prefab not found after rebuilding the Workshop UI prefab.");
                 return;
             }
 

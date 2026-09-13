@@ -26,10 +26,11 @@ Default identity:
    `Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf`
    and keep any license/notice required by that font. This repository intentionally does not ship a third-party font binary.
 5. Allow Unity to compile the Editor script. Resolve every compiler error before continuing.
-6. Run **Kanomjeen → Build Workshop UI Prefab**.
-7. Verify the generated file:
+6. Run **Kanomjeen → Export Workshop UI Master Bundle**. This rebuilds and validates the Effect prefab before packaging, so the export cannot accidentally reuse an old prefab layout.
+7. Verify the generated prefab file:
    `Assets/KanomjeenUI/Effects/KanomjeenUI/Effect.prefab`.
-8. Check the Unity Console. A warning that `KanomjeenThai.ttf` is missing is acceptable only for an explicitly English-only staging test; it is a release blocker when Thai text is required.
+8. Verify the generated master bundle files in `WorkshopExport`.
+9. Check the Unity Console. A warning that `KanomjeenThai.ttf` is missing is acceptable only for an explicitly English-only staging test; it is a release blocker when Thai text is required.
 
 ## 2. Validate prefab before export
 Inspect the prefab hierarchy and confirm at minimum:
@@ -68,6 +69,8 @@ Do not invent or hand-create the binary bundle/hash files. They must be generate
 
 ## 4. Export master bundle
 Use the Master Bundle Tool supplied through Unturned's current modding project package.
+
+Preferred path: run **Kanomjeen → Export Workshop UI Master Bundle** from this repository's builder. It regenerates `Effect.prefab`, validates text layout pivots, assigns `kanomjeen_ui.masterbundle`, and then calls the Unturned master bundle export helper. Do not manually export a previously generated prefab unless you have just rebuilt and inspected it in the same Unity session.
 
 Release requirements:
 - bundle name matches `MasterBundle.dat`
