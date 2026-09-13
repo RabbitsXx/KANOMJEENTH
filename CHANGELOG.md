@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-staging — 2026-09-14 UI overhaul measured from the reference Effects
+
+- Rebuilt the whole Workshop UI on tokens measured from the two commercial Effects this suite benchmarks against (`Supernovea Itemshop V2` 3477290482, `Supernovea RankQuest V2` 3478575975): `#212121` cards on a translucent `#1A1A1A` table, an opaque black header band, green `#4ADC43` affirmative and red `#9F1B1B` destructive actions, the reference `normal/highlighted/pressed/disabled` ColorBlock, Unity's built-in nine-slice `UISprite`, 1920×1080 canvas matched by width, and a 1180×700 shell whose content band can no longer overlap the header.
+- Adopted **Kanit** (Regular/SemiBold/Bold, SIL OFL 1.1) as the UI family. Kanit is the body font of both reference Effects and covers Thai and Latin in one family; it is downloaded from the upstream Google Fonts repository and the three blobs are verified by git hash. `Oswald`/`Anton` were rejected as display roles because google/fonts ships them as variable fonts only.
+- The font binaries are now **tracked in git** — the old `.gitignore` rules for a single `KanomjeenThai.ttf` meant a fresh clone could export a bundle with no Thai coverage and no visible error.
+- Added `BundleInspector.cs`, an editor tool that dumps any Unturned Effect master bundle as readable text (asset list, fonts reachable from Text components, textures/sprites, every GameObject rect, Image colour, Text setting and Button ColorBlock). It is how the reference tokens above were measured, and how the shipped bundle is now verified.
+- Re-exported the master bundle set with Unity 2022.3.62f3 and refreshed `Kanomjeen_UI_Workshop`: windows 155,304 B, linux 155,474 B, mac 155,596 B, `.hash` 61 B (re-verified against all three bundles), package total 466,611 B.
+- Documented the measured reference contents in `AGENTS.md` §13.7, rewrote `DESIGN_SYSTEM.md` as v2.0 with sources for every token, and recorded that the recurring 1-byte `Object.meta` is produced by Unturned's own upload step (both reference items contain it).
+
 ## 0.1.0-staging — 2026-09-14 Workshop UI reliability pass
 
 - Fixed the Waypoints screen rendering stacked on top of the main menu: `UiService.Screens` did not list `waypoints`, so the container was never hidden. The list is now one static field, checked against the Unity prefab by `verify-source.sh` / `verify-source.ps1`, and an unknown screen name logs an error and falls back to `main`.

@@ -1,100 +1,100 @@
-# Kanomjeen UI Design System v1.0
+# Kanomjeen UI Design System v2.0
 
 ## Product intent
-The UI should feel like a restrained survival-server interface layered onto Unturned, not an MMO dashboard. Information density is intentionally low and every screen should answer one task quickly.
+The UI should feel like a restrained survival-server interface layered onto Unturned, not an MMO
+dashboard. Information density is intentionally low and every screen should answer one task quickly.
+
+## Provenance of the v2 tokens
+v1 used an amber accent and a custom dark-grey palette. v2 is measured from two commercial Effects
+the project benchmarks against — `Supernovea Itemshop V2` (3477290482) and `Supernovea RankQuest V2`
+(3478575975). Their shipped bundles were fetched with SteamCMD and read with the in-repo
+`BundleInspector` editor tool, which prints every GameObject rect, Image colour, Text setting and
+Button ColorBlock. See `AGENTS.md` §13.6 for the raw measurements.
+
+No asset, font file or code was copied from those Effects. Their embedded fonts are all OFL, but
+Kanit was downloaded from the upstream Google Fonts repository instead of being extracted from their
+bundles, and the layout below is original work built on the same tokens.
 
 ## Visual tokens
-Reference values implemented by `KanomjeenUiBuilder.cs`:
+Implemented by `KanomjeenUiBuilder.cs`:
 
-- Backdrop: RGBA `8,12,15,220`
-- Primary surface: `22,29,35,250`
-- Secondary surface: `31,40,47,255`
-- Accent amber: `229,172,71,255`
-- Primary text: `241,245,247,255`
-- Muted text: `157,169,176,255`
-- Danger: `196,78,78,255`
-- Success: `78,161,111,255`
+| Token | Value | Source |
+| --- | --- | --- |
+| Backdrop dim | `#000000DD` | ref overlay |
+| Table surface (`KJ_Root`) | `#1A1A1AE6` | ref table `#1A1A1AC5`, slightly more opaque for legibility |
+| Header band | `#000000FF` | ref opaque header bar |
+| Card / row surface | `#212121FF` | ref card background |
+| Recessed surface | `#161616FF` | ref scroll/inset tone `#161616DE` |
+| Neutral surface | `#3C3C3CFF` | ref secondary surface |
+| Accent (affirmative) | `#4ADC43FF` | ref buy/confirm green |
+| Danger | `#9F1B1BFF` | ref sell/remove red |
+| Warning | `#FF9500FF` | ref warning orange |
+| Text | `#FFFFFFFF` | ref primary text |
+| Text dim | `#DBDBDBFF` | ref large-value text |
+| Muted | `#9E9E9EFF` | neutral grey, WCAG-passing on `#212121` |
+| Text on accent fill | `#101010FF` | contrast fix: white on `#4ADC43` is too low |
+| Hairline rule | `#FFFFFF1E` | header/content separator |
 
-## Canvas/layout
-- Reference resolution: 1920×1080
-- Canvas scaling: Scale With Screen Size
-- Main shell: approximately 980×700
-- Main content screen: approximately 900×500
-- Keep critical controls in the central safe area.
-- Avoid edge-anchored critical buttons that can become awkward on 21:9.
+Button ColorBlock follows the reference exactly: the sprite tint carries the colour, and the state
+block only shades it — `normal #FFFFFF`, `highlighted #F5F5F5`, `pressed #C8C8C8`,
+`disabled #C8C8C880`.
+
+Panels, cards, rows and buttons use Unity's built-in nine-slice `UI/Skin/UISprite.psd` (sliced), the
+same sprite the reference Effects draw their surfaces with.
 
 ## Typography
-- Workshop source uses a Unity built-in runtime font fallback so no font binary is redistributed from this repository.
-- Headings: bold, short, uppercase English labels where useful.
-- Body: concise and dynamic.
-- Thai/English content must be tested in the actual Unity/Unturned runtime before Workshop release.
-- Do not bake player names, cooldowns, server states or translated strings into textures.
+Kanit (SIL OFL 1.1, bundled in three weights — see `Assets/KanomjeenUI/Fonts/README.md`):
+
+| Role | Size | Weight |
+| --- | --- | --- |
+| Screen title / hero number | 30–44 | Bold |
+| Card title, row title | 19–24 | SemiBold |
+| Body, help text | 15–16 | Regular |
+| Button label, chip, meta | 13–14 | Bold / SemiBold |
+| Footer, contract version | 13–14 | Regular |
+
+Thai and Latin share the same family, so bilingual strings keep one voice. Headings stay short and
+uppercase. Do not bake player names, cooldowns, server states or translated strings into textures.
+
+## Canvas / layout
+- Reference resolution 1920×1080, `ScaleWithScreenSize`.
+- **Match width (`matchWidthOrHeight = 0`)**, as both reference Effects do. Check ultra-wide (21:9)
+  and 16:10 before release; height scales with width in this mode.
+- Shell `KJ_Root`: 1180×700, centred, 6px accent bar on the left edge.
+- Header band: 1180×96, opaque black, holding brand, title, status and the close button, closed by a
+  1px rule.
+- Content band: 1100×496, centred at `y = -52`; screens never overlap the header band.
+- Footer band: contract version (right) and a server-validation note (left).
+- List rows are 1058 wide with an 8px vertical gap: 8 rows at 46px pitch 54 (waypoints, kits),
+  6 rows at 56px pitch 64 (homes).
+- Everything sits on an 8px grid.
 
 ## Interaction hierarchy
-1. Main menu presents only major services.
-2. Feature screen provides one primary action/state.
-3. Destructive actions use the danger surface.
-4. Server-side validation always determines the result.
+1. Main menu presents only major services, as 542×120 cards (two columns) plus a full-width staff card.
+2. Feature screens provide one primary action/state.
+3. Destructive actions use the danger surface; affirmative actions use the accent surface.
+4. Server-side validation always determines the result; nothing in the UI grants authority.
 5. Chat remains the fallback for complex text input and targeted moderation.
 
-## Main menu
-Cards:
-- TPA
-- Homes
-- Kits
-- Stats
-- Airdrop
-- Staff (permission-hidden)
+## Screen notes
+- **TPA** — the request panel is hidden while browsing and appears for an incoming request; it has an
+  accent edge marker so it reads as an interruption.
+- **Homes** — six row slots are reserved regardless of the configured limit; the server hides unused
+  rows and creation stays on `/home set <name>`.
+- **Kits** — cooldown state is shown right-aligned in the row, claim is the only row action.
+- **Stats** — six stat cards (44px values) plus two wide duration rows.
+- **Airdrop** — a status screen, not a map shortcut: state chip, region, distance, objective timer and
+  the travel-restriction warning in warning orange.
+- **Staff** — the main-menu card is hidden without `kanomjeen.admin.inspect`; only god/vanish are
+  buttons, every targeted action stays a command so the audit trail keeps its target and reason text.
+- **Toast** — a 760×112 notification surface with an accent edge, reserved for short-lived notices.
 
-Each card includes a title, two-line purpose and left accent marker.
-
-## TPA
-The request panel is hidden when browsing TPA normally and becomes visible for an incoming request. This keeps the UI from implying an actionable request when none exists.
-
-Primary button hierarchy:
-- Accept — success
-- Deny — danger
-- Cancel mine — neutral
-
-## Homes
-Six visible row slots are reserved even though the default server limit is two. This allows permission-based limits without changing the Workshop UI. The server hides unused rows.
-
-Home creation remains `/home set <name>` in v1 because freeform text input through chat is simpler, more robust and auditable.
-
-## Kits
-Eight row slots. Cooldown state is displayed adjacent to the kit name. Claim is the only row action.
-
-## Stats
-Use summary cards for instantly comparable numeric values and horizontal rows for long-duration values.
-
-## Airdrop
-Airdrop UI is a status screen, not a teleport/map shortcut. It communicates:
-- region/spawn label
-- distance
-- objective timer
-- ACTIVE/STANDBY state
-- travel restriction warning
-
-## Staff
-The Main Staff card is hidden when `kanomjeen.admin.inspect` is absent. The server still validates every admin action.
-
-Only low-risk personal toggles are buttons in v1:
-- God
-- Vanish
-
-Targeted moderation stays command-based because target/reason text should be explicit in audit records.
-
-## Accessibility/QA targets
-Before Workshop release test:
-- 1920×1080
-- 1920×1200
-- 2560×1080 / wider equivalent
-- UI scaling or display scaling variations available in the test environment
-- long Steam/display names
-- long home names up to configured 24 characters
-- Thai strings
-- color readability in dark and bright in-game scenes
-- mouse focus/modal state closing correctly
+## Accessibility / QA targets
+Before Workshop release test: 1920×1080, 1920×1200, 2560×1080 and a 21:9 resolution; long Steam and
+display names; home names up to the configured 24 characters; Thai strings; colour readability over
+dark and bright scenes; mouse focus and modal-close behaviour.
 
 ## Change control
-Element names beginning `KJ_` are API contracts, not cosmetic object names. Renaming one requires a UI contract/server code change and version bump.
+Element names beginning `KJ_` are API contracts, not cosmetic object names. v2 changes only geometry,
+colour, typography and decoration, so the contract stays at **1.0**. Renaming or removing a bound
+element requires a UI contract/server change and a version bump.

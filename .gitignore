@@ -32,8 +32,10 @@ workshop-ui/UnityProject/UserSettings/
 !workshop-ui/UnityProject/WorkshopExport/*.masterbundle
 !workshop-ui/UnityProject/WorkshopExport/*.masterbundle.hash
 
-workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf
-workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf.meta
+# UI fonts are tracked on purpose. The Workshop bundle must embed a Thai-capable family, and a clone
+# that cannot re-export with the real font ships English-only UI without any visible error.
+# Only OFL-licensed files belong here (see Fonts/README.md); never add a font without
+# redistribution rights to this directory.
 
 # Local staging / backups
 /Backups/

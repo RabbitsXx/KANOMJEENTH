@@ -164,7 +164,8 @@ Use two non-admin clients A/B plus optional staff C.
 
 ## Workshop UI build
 - [ ] [!] Import Unturned's current `Extras/Sources/Project.unitypackage` into a compatible Unity project.
-- [ ] Add a legal Thai-capable `KanomjeenThai.ttf` to the documented font slot, or explicitly accept English-only UI after review.
+- [x] Bundle a legally redistributable Thai-capable family: **Kanit** Regular/SemiBold/Bold (SIL OFL 1.1) is committed under `Assets/KanomjeenUI/Fonts/` with the license notice, and `BundleInspector` confirms all three weights are embedded in the exported bundle (`dynamic=True`, `fontNames=[Kanit]`).
+- [ ] Render Thai text on a real client through `/menu` and confirm no missing-glyph boxes (still requires a human with the game running).
 - [ ] Run `Kanomjeen -> Build Workshop UI Prefab` with zero Unity console errors.
 - [ ] Generated `Effect.prefab` contains every contract element.
 - [ ] Export `kanomjeen_ui.masterbundle` with multiplatform enabled.

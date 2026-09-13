@@ -76,7 +76,7 @@ KANOMJEENTH/
 │   ├── UI_CONTRACT.md, DESIGN_SYSTEM.md, WORKSHOP_RELEASE.md, README.md
 │   └── UnityProject/                # Unity 2022.3.62f3 project
 │       ├── Assets/KanomjeenUI/Editor/KanomjeenUiBuilder.cs   # builds + validates the prefab
-│       ├── Assets/KanomjeenUI/Fonts/                          # KanomjeenThai.ttf (gitignored) + OFL.txt
+│       ├── Assets/KanomjeenUI/Fonts/                          # Kanit Regular/SemiBold/Bold.ttf + OFL.txt (tracked)
 │       ├── Assets/KanomjeenUI/Effects/KanomjeenUI/Effect.prefab
 │       ├── Assets/Editor/Assembly-CSharp-Editor/Tools/        # Unturned master bundle helpers
 │       ├── WorkshopExport/          # generated bundle + hash + manifest (tracked on purpose)
@@ -194,37 +194,38 @@ Prerequisites: the Unity project already contains the Unturned `Project.unitypac
 
 ### 6.1 The font slot (release gate)
 
-The builder resolves the Thai font by exact path:
+The builder resolves three weights of **Kanit** by exact path:
 
 ```text
-workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf
+workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/Kanit-Regular.ttf      (body)
+workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/Kanit-SemiBold.ttf     (row titles, labels)
+workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/Kanit-Bold.ttf         (titles, buttons, hero)
 ```
 
-* Expected content: **Noto Sans Thai** (SIL OFL 1.1), official source
-  <https://github.com/google/fonts/tree/main/ofl/notosansthai>. `OFL.txt` beside it already carries
-  the matching license text — keep them together.
-* The font binary and its `.meta` are **deliberately gitignored** (`.gitignore` lines 35–36), so a
-  fresh clone does not have it. Re-create it with:
+* Kanit is SIL OFL 1.1, official source <https://github.com/google/fonts/tree/main/ofl/kanit>.
+  `OFL.txt` beside the fonts carries that license — keep them together and never ship the bundle
+  without it. Why Kanit is the family, and how the reference Effects' fonts were identified, is in
+  `Fonts/README.md` and §13.6.
+* **The fonts are tracked in git on purpose** (the old `.gitignore` rules for a single
+  `KanomjeenThai.ttf` were removed). A clone must be able to re-export with the real family,
+  otherwise it silently ships English-only UI. Only OFL-licensed files may be added to that folder.
+* Verify integrity after any re-download — these are the upstream git blob hashes:
 
   ```bash
-  curl -L -o "workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf" \
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansthai/NotoSansThai%5Bwdth%2Cwght%5D.ttf"
-
-  # integrity check — must print the upstream git blob hash
-  git hash-object workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf
-  # 34b48ab6f74867dbfce19410a2f452abef34e3ff
+  git hash-object workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/Kanit-*.ttf
+  # e9bc0a2f5d0d1ad0df1fa20c44e381834c128c58  Kanit-Regular.ttf     173148 bytes
+  # 0c79ade5d4d64cd0a0408e34a9b1219f042ea9c5  Kanit-SemiBold.ttf    174796 bytes
+  # fc9110692bd709c4a940156c90b900093ab47c65  Kanit-Bold.ttf        176136 bytes
   ```
 
-  Anything other than the upstream hash means a modified/incorrect font — stop and investigate.
-* Consequence of the ignore rule: the tracked `Effect.prefab` contains a font GUID that only exists
-  in the local (ignored) `.meta`. This is safe because `ExportMasterBundle()` **rebuilds** the prefab
-  before every export, re-resolving the font by path. A clone that opens the prefab *before*
-  re-exporting will show a missing font reference — re-export instead of fixing it by hand.
-* The font is a variable font (`[wdth,wght]`); Unity 2022 imports the default instance (Regular), so
-  bold text is synthesized. Validate Thai rendering on a real client before publishing.
-* While the font is missing, the builder still produces a prefab using a Unity fallback font and logs:
-  `[Kanomjeen] Thai font asset not found ...`. **That warning is a release blocker**, not a cosmetic
-  issue — `WORKSHOP_RELEASE.md` requires Thai coverage when Thai text ships.
+  Anything other than those hashes means a modified/incorrect font — stop and investigate.
+* Static TTFs are deliberate. The reference Effects use Oswald and Anton for display text, but those
+  exist in google/fonts only as variable fonts (`Oswald[wght].ttf`), which Unity 2022 imports at its
+  default instance with no way to select the bold axis. Kanit ships static weights and covers Thai and
+  Latin in one family, so it carries both body and display roles here.
+* While a font is missing, the builder still produces a prefab using a Unity fallback font and logs:
+  `[Kanomjeen] Kanit fonts not found under Assets/KanomjeenUI/Fonts/ ...`. **That warning is a release
+  blocker**, not a cosmetic issue — `WORKSHOP_RELEASE.md` requires Thai coverage when Thai text ships.
 
 ### 6.2 The two Unity menu items
 
@@ -303,13 +304,25 @@ grep -o "KJ_Screen_[a-z]*" "$P" | sort -u
 # 2. the newest screen's elements are present (8 reusable rows)
 grep -o "KJ_Waypoint_[A-Za-z_0-9]*" "$P" | sort -u | head
 
-# 3. the prefab is bound to a real font, not the built-in fallback
+# 3. the prefab is bound to real fonts, not the built-in fallback
 grep -o "m_Font: {fileID: [0-9]*, guid: [a-f0-9]*, type: [0-9]*}" "$P" | sort | uniq -c
-grep '^guid:' workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf.meta
-#   the guid in m_Font must equal the font .meta guid (a guid of all zeroes = fallback font)
+grep '^guid:' workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/Kanit-*.ttf.meta
+#   every guid in m_Font must equal one of those .meta guids (all zeros = fallback font)
 
-# 4. no Thai-font release-blocker warning in the export log
-grep -c "Thai font asset not found" workshop-ui/UnityProject/Logs/export-workshop-ui-*.log   # must be 0
+# 4. no font release-blocker warning in the export log
+grep -c "Kanit fonts not found" workshop-ui/UnityProject/Logs/export-workshop-ui-*.log   # must be 0
+
+# 4b. the *bundle* really carries the fonts (the prefab is not proof — see §13)
+#     run BundleInspector (optionally from the menu Kanomjeen > Inspect Bundle...)
+KJ_BUNDLE=F:/KANOMJEENTH/workshop-ui/UnityProject/WorkshopExport/kanomjeen_ui.masterbundle \
+KJ_DUMP=F:/tmp/kanomjeen-bundle.txt \
+  "F:/Unity/Hub/Editor/2022.3.62f3-x86_64/Editor/Unity.exe" -batchmode -nographics -quit \
+  -projectPath F:/KANOMJEENTH/workshop-ui/UnityProject \
+  -executeMethod Kanomjeen.EditorTools.BundleInspector.Dump -logFile F:/tmp/bundle-dump.log
+sed -n '/## Fonts/,/^$/p' F:/tmp/kanomjeen-bundle.txt
+#   expect three lines: Kanit-Regular, Kanit-SemiBold, Kanit-Bold, all dynamic=True fontNames=[Kanit]
+grep -c 'sprite="UISprite" type=Sliced' F:/tmp/kanomjeen-bundle.txt
+#   expect every panel/card/row/button image to be Sliced (the reference nine-slice look)
 
 # 5. bundles are genuine Unity 2022 exports
 for f in Kanomjeen_UI_Workshop/*.masterbundle; do strings -n 6 "$f" | head -2 | tr '\n' ' '; echo " <- $f"; done
@@ -326,8 +339,10 @@ sha1sum Kanomjeen_UI_Workshop/kanomjeen_ui.masterbundle \
 find Kanomjeen_UI_Workshop -type f | sort
 ```
 
-Sizes are useful smoke signals: a bundle without an embedded font is ~28 KB, with Noto Sans Thai
-embedded it is ~139 KB. A sudden drop usually means the font slot is empty again.
+Sizes are useful smoke signals. Current v2 export (three Kanit weights embedded, nine-slice sprites
+referenced): windows **155,304 B**, linux **155,474 B**, mac **155,596 B**. A bundle without any
+embedded font is ~28 KB and the v1 Noto-only bundle was ~139 KB, so a drop back toward those numbers
+means the font slot is empty again. Whole package: **466,611 B** across the six release files.
 
 ---
 
@@ -340,9 +355,13 @@ embedded it is ~139 KB. A sudden drop usually means the font slot is empty again
    `Kanomjeen_UI_Workshop/` are tracked because they were committed before the ignore rules were
    added — if you ever add a *new* bundle filename there, you must adjust the ignore rules or use
    `git add -f`, otherwise the release package silently ships stale binaries.
-3. **Stray files must not enter the Workshop folder.** A 1-byte `Object.meta` had accumulated in
-   `Kanomjeen_UI_Workshop/` (a leftover, not part of the release); it was removed on 2026-09-14.
-   Keep the folder to the six files listed above.
+3. **Stray files must not enter the Workshop folder.** A 1-byte `Object.meta` keeps appearing in
+   `Kanomjeen_UI_Workshop/`. Do not chase it as a build bug: both commercial reference items carry the
+   identical 1-byte file (verified 2026-09-14 by downloading them with SteamCMD), and it appears in
+   our folder only ~15 s before each Workshop upload. **Unturned's own upload step creates it.** It has
+   no effect on the client (the game reads only the files `MasterBundle.dat`/`Asset.dat` reference),
+   so delete it for tidiness and keep the folder at the six release files, but do not treat its return
+   as a source-tree defect.
 4. **Do not "fix" a stale bundle by editing it.** A prefab that looks correct in the Editor is not
    proof the *bundle* contains it — the bundle is only regenerated by the export step.
 5. **`Effect.prefab` is a generated file.** Hand edits are lost on the next `Build()`. Change
@@ -375,7 +394,7 @@ Unturned publishes mods from inside the game — there is no separate uploader t
    | Name | `Kanomjeen UI` (client UI for the Kanomjeen server) |
    | **Collection Path** | `F:\KANOMJEENTH\Kanomjeen_UI_Workshop` — the folder itself, containing `MasterBundle.dat`, the four bundle/hash files and `Effects/` |
    | Preview Image | a `.png`/`.jpg` path — `F:\KANOMJEENTH\logo.png` exists and can be used, or supply a 512×512+ UI screenshot |
-   | Change Note | e.g. `Waypoints screen + Thai font (Noto Sans Thai, OFL)` |
+   | Change Note | e.g. `UI overhaul to reference style + Kanit fonts (SIL OFL)` |
    | Asset Type | mod/content type for this Effect (`Mods`); pick the closest UI/mod category |
    | Visibility | `Public` when releasing; keep `Private`/`Unlisted` for staging |
    | Allowed IPs | leave empty (only needed to restrict auto-download to specific servers) |
@@ -422,11 +441,12 @@ Never describe the package as "production-ready" while any of those are unverifi
 
 ## 11. Current release state (as of 2026-09-14)
 
-* `Kanomjeen_UI_Workshop/` was re-exported with Unity **2022.3.62f3** and now contains the
-  **Waypoints** screen (`KJ_Screen_waypoints`, rows `KJ_Waypoint_Row_0..7`) plus an embedded
-  **Noto Sans Thai** font, so the Thai-font release-blocker warning is cleared.
-* Bundle sizes: windows `138949`, linux `139016`, mac `139166` bytes; `.hash` 61 bytes (format `02` +
-  three SHA1 values, verified against the shipped bundles).
+* `Kanomjeen_UI_Workshop/` was re-exported with Unity **2022.3.62f3**; it contains the **Waypoints**
+  screen (`KJ_Screen_waypoints`, rows `KJ_Waypoint_Row_0..7`) plus all three embedded **Kanit**
+  weights, so the font release-blocker warning is cleared. The UI itself is now built on the token
+  set measured from the two reference Effects (see §13.7 and `workshop-ui/DESIGN_SYSTEM.md` v2.0).
+* Bundle sizes: windows `155304`, linux `155474`, mac `155596` bytes; `.hash` 61 bytes (format `02` +
+  three SHA1 values, verified against the shipped bundles); package total `466611` bytes.
 * Still open: the in-client visual pass (Thai glyph rendering, bold synthesis, long-string wrapping)
   and everything in `QA_REPORT.md` that needs a live server.
 
@@ -584,3 +604,42 @@ screen means touching the UI class plus the two screen lists — never the telep
 
 Reference decompilation is **study material only**: do not copy third-party code into Kanomjeen (see
 `THIRD_PARTY_NOTICES.md`); re-implement behaviour independently.
+
+### 13.7 What the reference bundles actually contain (measured 2026-09-14)
+
+Both Effects were downloaded and read rather than guessed at. Valve's own tool fetches Workshop
+content with an anonymous login, so no browser or site scraper is involved:
+
+```bash
+# steamcmd.exe is not part of the repo; keep it in a scratch directory
+curl -L -o steamcmd.zip https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip && unzip steamcmd.zip
+./steamcmd.exe +force_install_dir "F:/tmp/steamcmd" +login anonymous \
+  +workshop_download_item 304930 3477290482 +workshop_download_item 304930 3478575975 +quit
+# content lands in steamapps/workshop/content/304930/<id>/<name>.masterbundle
+```
+
+Then read each bundle with `BundleInspector` (menu `Kanomjeen > Inspect Bundle...`, or the batch
+`-executeMethod Kanomjeen.EditorTools.BundleInspector.Dump` shown in §7). Measured facts:
+
+| Property | Supernovea Itemshop V2 | Supernovea RankQuest V2 |
+| --- | --- | --- |
+| Bundle | `supernovea-itemshoppingmall.masterbundle`, 338,173 B | `supernovea-rankquest.masterbundle`, 1,030,096 B |
+| Canvas | ScreenSpaceOverlay, order 0, 1920x1080, match **width** | same |
+| Main surface | table 1280x650 `#1A1A1AC5` | table 1280x722 `#333333E9` |
+| Header | 1280x100 opaque `#000000` band | 1280x100 band |
+| Cards / rows | `#212121` nine-slice | `#212121`, `#3C3C3C`, `#5B5B5B` |
+| Accents | green `#4ADC43`, red `#9F1B1B`, orange `#FF9500` | green `#00FF37`, red `#FF5A5A` |
+| Button ColorBlock | normal `#FFFFFF`, highlighted `#F5F5F5`, pressed `#C8C8C8`, disabled `#C8C8C880` | identical |
+| Sprites | Unity built-in `UISprite`, `InputFieldBackground`, sliced | same |
+| Fonts | `Kanit-Regular` (body, 39 uses), `Oswald-Bold` (card titles), `Anton`, `Bangers` | `Anton`, `Electronic Highway Sign` |
+| Type sizes | 14 button, 24 price, 30 card title, 61 hero | 19 body, 30 title |
+
+Two conclusions this project acted on:
+
+1. **Kanit is the body font of both references** and it covers Thai, which is why Kanit is now the
+   Kanomjeen UI family (`Assets/KanomjeenUI/Fonts/`). It was fetched from the upstream Google Fonts
+   repository, not extracted from their bundles; their fonts are all OFL, so this is a courtesy and a
+   cleanliness decision, not a legal workaround.
+2. **Their textures, sprites, layout numbers and element names are not reused.** Kanomjeen keeps its
+   own element contract (`KJ_*`), its own geometry and its own colour ramp; only the measured tokens
+   in `DESIGN_SYSTEM.md` v2.0 were aligned to the reference look.

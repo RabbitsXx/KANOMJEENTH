@@ -22,15 +22,17 @@ Default identity:
 3. Copy the repository folder:
    `UnityProject/Assets/KanomjeenUI`
    into the Unity project's `Assets/KanomjeenUI`.
-4. For Thai-capable UI, obtain a font from an official source with redistribution rights suitable for Workshop distribution. Copy it to:
-   `Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf`
-   and keep any license/notice required by that font. This repository intentionally does not ship a third-party font binary.
+4. Thai-capable UI needs **Kanit**, which this repository already ships in three weights under
+   `Assets/KanomjeenUI/Fonts/` (`Kanit-Regular.ttf`, `Kanit-SemiBold.ttf`, `Kanit-Bold.ttf`) together
+   with its SIL OFL 1.1 notice. If the files are missing or their git blob hashes do not match
+   `Fonts/README.md`, re-download them from the upstream Google Fonts repository — do not substitute a
+   font without redistribution rights.
 5. Allow Unity to compile the Editor script. Resolve every compiler error before continuing.
 6. Run **Kanomjeen → Export Workshop UI Master Bundle**. This rebuilds and validates the Effect prefab before packaging, so the export cannot accidentally reuse an old prefab layout.
 7. Verify the generated prefab file:
    `Assets/KanomjeenUI/Effects/KanomjeenUI/Effect.prefab`.
 8. Verify the generated master bundle files in `WorkshopExport`.
-9. Check the Unity Console. A warning that `KanomjeenThai.ttf` is missing is acceptable only for an explicitly English-only staging test; it is a release blocker when Thai text is required.
+9. Check the Unity Console. A warning that the Kanit fonts are missing is acceptable only for an explicitly English-only staging test; it is a release blocker when Thai text is required. To prove the *bundle* carries them, dump it with `Kanomjeen → Inspect Bundle...` and confirm the `## Fonts` section lists Kanit-Regular, Kanit-SemiBold and Kanit-Bold with `dynamic=True`.
 
 ## 2. Validate prefab before export
 Inspect the prefab hierarchy and confirm at minimum:

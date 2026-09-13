@@ -261,10 +261,10 @@ Use a Unity version compatible with the **current installed Unturned modding sou
    `workshop-ui/UnityProject/Assets/KanomjeenUI`
    into the Unity project's:
    `Assets/KanomjeenUI`
-3. Obtain a Thai-capable font from an official source with redistribution rights suitable for Steam Workshop (for example, an OFL-licensed Thai family). Do **not** copy a random font from Windows or another product.
-4. Put the font at exactly:
-   `Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf`
-5. Keep any license/notice required by the font license in the Workshop/source release.
+3. The Thai-capable family is already chosen and committed: **Kanit** (SIL OFL 1.1). Confirm the three weights exist and match the recorded git blob hashes:
+   `Assets/KanomjeenUI/Fonts/Kanit-Regular.ttf`, `Kanit-SemiBold.ttf`, `Kanit-Bold.ttf` (see `Fonts/README.md`). Do **not** substitute a font from Windows or another product.
+4. The font path is resolved by name in `KanomjeenUiBuilder`; renaming a file requires a rebuild.
+5. Keep the license notice (`Assets/KanomjeenUI/Fonts/OFL.txt`) in the Workshop/source release.
 6. Allow Unity to compile. Fix every Unity C# error; do not ignore Console errors.
 7. Run menu:
    **Kanomjeen -> Build Workshop UI Prefab**

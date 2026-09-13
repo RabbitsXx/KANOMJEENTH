@@ -7,35 +7,67 @@ using SDG.Unturned.Tools;
 
 namespace Kanomjeen.EditorTools
 {
+    /// <summary>
+    /// Builds the Workshop Effect prefab (`.prefab`) that the plugins drive at runtime.
+    ///
+    /// Design tokens are measured from two commercial reference Effects (Supernovea Itemshop V2,
+    /// Supernovea RankQuest V2) whose shipped bundles were read with
+    /// <see cref="BundleInspector"/>: Kanit typography, #212121 cards on a translucent dark table,
+    /// an opaque black header band, the built-in nine-slice UI sprite, and a white/grey
+    /// Button ColorBlock where colour lives on the Image. See workshop-ui/DESIGN_SYSTEM.md.
+    ///
+    /// Element names beginning `KJ_` are the server API contract (UI_CONTRACT.md). This file may change
+    /// geometry, colour and typography freely, but renaming a bound element is a contract change.
+    /// </summary>
     public static class KanomjeenUiBuilder
     {
         private const string OutputFolder = "Assets/KanomjeenUI/Effects/KanomjeenUI";
         private const string OutputPrefab = OutputFolder + "/Effect.prefab";
-        private const string PreferredFontPath = "Assets/KanomjeenUI/Fonts/KanomjeenThai.ttf";
+        private const string FontFolder = "Assets/KanomjeenUI/Fonts/";
+        private const string BodyFontPath = FontFolder + "Kanit-Regular.ttf";
+        private const string StrongFontPath = FontFolder + "Kanit-SemiBold.ttf";
+        private const string DisplayFontPath = FontFolder + "Kanit-Bold.ttf";
         private const string MasterBundleName = "kanomjeen_ui.masterbundle";
         private const string MasterBundleOutputFolder = "WorkshopExport";
 
-        private static readonly Color Backdrop = new Color32(8, 12, 15, 220);
-        private static readonly Color Surface = new Color32(22, 29, 35, 250);
-        private static readonly Color Surface2 = new Color32(31, 40, 47, 255);
-        private static readonly Color Accent = new Color32(229, 172, 71, 255);
-        private static readonly Color Text = new Color32(241, 245, 247, 255);
-        private static readonly Color Muted = new Color32(157, 169, 176, 255);
-        private static readonly Color Danger = new Color32(196, 78, 78, 255);
-        private static readonly Color Success = new Color32(78, 161, 111, 255);
-        private static Font _font;
+        // ---- Measured reference palette -------------------------------------------------------
+        private static readonly Color Backdrop = Rgba(0, 0, 0, 0xDD);            // full-screen dim
+        private static readonly Color Table = Rgba(0x1A, 0x1A, 0x1A, 0xE6);      // ref table surface
+        private static readonly Color HeaderBar = Rgba(0x00, 0x00, 0x00, 0xFF);  // ref opaque header
+        private static readonly Color Card = Rgba(0x21, 0x21, 0x21, 0xFF);       // ref card surface
+        private static readonly Color Inset = Rgba(0x16, 0x16, 0x16, 0xFF);      // recessed list area
+        private static readonly Color Neutral = Rgba(0x3C, 0x3C, 0x3C, 0xFF);    // secondary surface
+        private static readonly Color Accent = Rgba(0x4A, 0xDC, 0x43, 0xFF);     // ref affirmative
+        private static readonly Color Danger = Rgba(0x9F, 0x1B, 0x1B, 0xFF);     // ref destructive
+        private static readonly Color Warning = Rgba(0xFF, 0x95, 0x00, 0xFF);    // ref warning
+        private static readonly Color Text = Rgba(0xFF, 0xFF, 0xFF, 0xFF);
+        private static readonly Color TextDim = Rgba(0xDB, 0xDB, 0xDB, 0xFF);
+        private static readonly Color Muted = Rgba(0x9E, 0x9E, 0x9E, 0xFF);
+        private static readonly Color OnDark = Rgba(0x10, 0x10, 0x10, 0xFF);     // text on accent fill
+        private static readonly Color Rule = Rgba(0xFF, 0xFF, 0xFF, 0x1E);       // hairline dividers
+
+        // ---- Layout scale (8px grid) -----------------------------------------------------------
+        private const float ShellWidth = 1180f;
+        private const float ShellHeight = 700f;
+        private const float ContentWidth = 1100f;
+        private const float ContentHeight = 496f;
+        private const float ContentCenterY = -52f;
+        private const float HeaderHeight = 96f;
+        private const float RowPitch = 54f;
+        private const float Pad = 8f;
+
+        private static Font _body;
+        private static Font _strong;
+        private static Font _display;
+        private static Sprite _panelSprite;
+        private static Sprite _insetSprite;
 
         [MenuItem("Kanomjeen/Build Workshop UI Prefab")]
         public static void Build()
         {
             Directory.CreateDirectory(OutputFolder);
-            _font = AssetDatabase.LoadAssetAtPath<Font>(PreferredFontPath);
-            if (_font == null)
-            {
-                _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                Debug.LogWarning("[Kanomjeen] Thai font asset not found at " + PreferredFontPath + ". UI will build with fallback font, but Thai glyph coverage must be validated before Workshop release.");
-            }
+            LoadFonts();
+            LoadSprites();
 
             var root = new GameObject("Effect", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = root.GetComponent<Canvas>();
@@ -44,21 +76,18 @@ namespace Kanomjeen.EditorTools
             var scaler = root.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
+            // The reference Effects match width; height follows so the table keeps its proportions
+            // on 16:10 and ultra-wide displays.
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = 0f;
 
             var dim = Panel(root.transform, "KJ_Dim", Backdrop, Vector2.zero, new Vector2(1920, 1080));
             Stretch(dim.GetComponent<RectTransform>());
 
-            var shell = Panel(root.transform, "KJ_Root", Surface, new Vector2(0, 0), new Vector2(980, 700));
+            var shell = Panel(root.transform, "KJ_Root", Table, Vector2.zero, new Vector2(ShellWidth, ShellHeight));
             AnchorCenter(shell.GetComponent<RectTransform>());
             AddAccent(shell.transform);
-
-            Label(shell.transform, "KJ_Brand", "KANOMJEEN", 18, Text, new Vector2(-390, 314), new Vector2(160, 28), TextAnchor.MiddleLeft, FontStyle.Bold);
-            Label(shell.transform, "KJ_Title", "KANOMJEEN", 30, Text, new Vector2(-390, 266), new Vector2(650, 48), TextAnchor.MiddleLeft, FontStyle.Bold);
-            Label(shell.transform, "KJ_Status", "Semi-Vanilla Survival • California 2", 15, Muted, new Vector2(-390, 226), new Vector2(730, 34), TextAnchor.MiddleLeft, FontStyle.Normal);
-            Button(shell.transform, "KJ_Close", "CLOSE", new Vector2(394, 304), new Vector2(120, 42), Surface2, Text);
-            Label(shell.transform, "KJ_ContractVersion", "1.0", 11, Muted, new Vector2(424, -325), new Vector2(70, 22), TextAnchor.MiddleRight, FontStyle.Normal);
+            BuildHeader(shell.transform);
 
             BuildMain(shell.transform);
             BuildWaypoints(shell.transform);
@@ -69,6 +98,9 @@ namespace Kanomjeen.EditorTools
             BuildAirdrop(shell.transform);
             BuildAdmin(shell.transform);
             BuildToast(shell.transform);
+
+            Label(shell.transform, "KJ_ContractVersion", "1.0", 14, Muted, new Vector2(ShellWidth / 2f - 40f, -ShellHeight / 2f + 26f), new Vector2(200, 24), TextAnchor.MiddleRight, FontStyle.Normal, _body);
+            Label(shell.transform, "KJ_FooterNote", "Server-validated • /menu or /kjmenu", 13, Muted, new Vector2(-(ShellWidth / 2f - 40f), -ShellHeight / 2f + 26f), new Vector2(560, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
 
             ValidateTextLayout(root);
             PrefabUtility.SaveAsPrefabAsset(root, OutputPrefab);
@@ -100,118 +132,180 @@ namespace Kanomjeen.EditorTools
             Debug.Log("[Kanomjeen] Workshop UI master bundle export completed: " + outputPath);
         }
 
+        // ---- Frame -----------------------------------------------------------------------------
+
+        private static void BuildHeader(Transform shell)
+        {
+            var bar = Panel(shell, "KJ_HeaderBar", HeaderBar, new Vector2(0, (ShellHeight - HeaderHeight) / 2f), new Vector2(ShellWidth, HeaderHeight));
+            bar.GetComponent<Image>().sprite = _panelSprite;
+            bar.GetComponent<Image>().type = Image.Type.Sliced;
+
+            Label(shell, "KJ_Brand", "KANOMJEEN", 13, Accent, new Vector2(-(ShellWidth / 2f - 40f), (ShellHeight - HeaderHeight) / 2f + 24f), new Vector2(320, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+            Label(shell, "KJ_Title", "KANOMJEEN", 30, Text, new Vector2(-(ShellWidth / 2f - 40f), (ShellHeight - HeaderHeight) / 2f - 4f), new Vector2(700, 40), TextAnchor.MiddleLeft, FontStyle.Normal, _display);
+            Label(shell, "KJ_Status", "Semi-Vanilla Survival • California 2", 15, TextDim, new Vector2(-(ShellWidth / 2f - 40f), (ShellHeight - HeaderHeight) / 2f - 32f), new Vector2(820, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            Button(shell, "KJ_Close", "CLOSE", new Vector2(ShellWidth / 2f - 40f - 48f, (ShellHeight - HeaderHeight) / 2f), new Vector2(96, 40), Neutral, Text);
+
+            var rule = Panel(shell, "KJ_HeaderRule", Rule, new Vector2(0, ShellHeight / 2f - HeaderHeight), new Vector2(ShellWidth, 1));
+            rule.GetComponent<Image>().raycastTarget = false;
+        }
+
+        private static void AddAccent(Transform shell)
+        {
+            var accent = Panel(shell, "KJ_Accent", Accent, new Vector2(-(ShellWidth / 2f) + 3f, 0), new Vector2(6, ShellHeight));
+            accent.GetComponent<Image>().raycastTarget = false;
+        }
+
+        // ---- Screens ---------------------------------------------------------------------------
+
         private static void BuildMain(Transform parent)
         {
             var screen = Screen(parent, "main");
-            Label(screen, "KJ_Main_Intro", "SURVIVAL SERVICES", 13, Accent, new Vector2(-392, 180), new Vector2(350, 28), TextAnchor.MiddleLeft, FontStyle.Bold);
-            CardButton(screen, "KJ_Main_TPA", "TPA", "Player-to-player travel\nCombat / raid protected", -205, 108);
-            CardButton(screen, "KJ_Main_Waypoints", "WAYPOINTS", "Save and track destinations\nNative map-marker fallback", 205, 108);
-            CardButton(screen, "KJ_Main_Homes", "HOMES", "Track or teleport separately\nRestricted-zone aware", -205, -16);
-            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", 205, -16);
-            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", -205, -140);
-            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTemporary red marker", 205, -140);
-            CardButton(screen, "KJ_Main_Admin", "STAFF", "Permission restricted", 0, -272);
+            Label(screen, "KJ_Main_Intro", "SURVIVAL SERVICES", 13, Accent, new Vector2(-ContentWidth / 2f, 214), new Vector2(500, 22), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+
+            const float cardWidth = 542f;
+            const float cardHeight = 120f;
+            var columnX = cardWidth / 2f + Pad / 2f;
+            var topRowY = 160f;
+            var pitch = cardHeight + 16f;
+
+            CardButton(screen, "KJ_Main_TPA", "TPA", "Player-to-player travel\nCombat and raid protected", -columnX, topRowY, cardWidth, cardHeight);
+            CardButton(screen, "KJ_Main_Waypoints", "WAYPOINTS", "Save and track destinations\nNative map-marker fallback", columnX, topRowY, cardWidth, cardHeight);
+            CardButton(screen, "KJ_Main_Homes", "HOMES", "Track or teleport separately\nRestricted-zone aware", -columnX, topRowY - pitch, cardWidth, cardHeight);
+            CardButton(screen, "KJ_Main_Kits", "KITS", "Survival utility only\nNo pay-to-win loadouts", columnX, topRowY - pitch, cardWidth, cardHeight);
+            CardButton(screen, "KJ_Main_Stats", "STATS", "Kills, deaths, KDR\nPlaytime and survival", -columnX, topRowY - (pitch * 2f), cardWidth, cardHeight);
+            CardButton(screen, "KJ_Main_Airdrop", "AIRDROP", "Live PvP objective\nTravel restrictions inside", columnX, topRowY - (pitch * 2f), cardWidth, cardHeight);
+
+            var staff = Button(screen, "KJ_Main_Admin", string.Empty, new Vector2(0, topRowY - (pitch * 3f) + 8f), new Vector2(ContentWidth, 64), Card, Text);
+            Label(staff.transform, "KJ_Main_Admin_Title", "STAFF TOOLS", 20, Text, new Vector2(-(ContentWidth / 2f) + 20f, 12), new Vector2(420, 28), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+            Label(staff.transform, "KJ_Main_Admin_Subtitle", "Permission restricted — /inspect, /warn, /mute, /kick, /kjban", 14, Muted, new Vector2(-(ContentWidth / 2f) + 20f, -14), new Vector2(900, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
         }
 
         private static void BuildWaypoints(Transform parent)
         {
             var screen = Screen(parent, "waypoints");
-            Label(screen, "KJ_Waypoint_Help", "Use /wp add <name> at your position. Select TRACK to send the destination to Unturned's native map.", 14, Muted, new Vector2(0, 190), new Vector2(790, 34), TextAnchor.MiddleCenter, FontStyle.Normal);
+            Label(screen, "KJ_Waypoint_Help", "Use /wp add <name> where you stand. TRACK sends that destination to Unturned's native map.", 15, Muted, new Vector2(-ContentWidth / 2f, 214), new Vector2(ContentWidth, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            const float rowWidth = 1058f;
+            const float rowHeight = 46f;
+            var firstRowY = 165f;
             for (var i = 0; i < 8; i++)
             {
-                var y = 146 - (i * 54);
-                var row = Panel(screen, "KJ_Waypoint_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 48));
-                Label(row.transform, "KJ_Waypoint_Name_" + i, "WAYPOINT", 15, Text, new Vector2(-365, 0), new Vector2(430, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
-                Button(row.transform, "KJ_Waypoint_Track_" + i, "TRACK", new Vector2(225, 0), new Vector2(120, 40), Success, Text);
-                Button(row.transform, "KJ_Waypoint_Delete_" + i, "DELETE", new Vector2(330, 0), new Vector2(84, 40), Danger, Text);
+                var row = Panel(screen, "KJ_Waypoint_Row_" + i, Card, new Vector2(0, firstRowY - (i * RowPitch)), new Vector2(rowWidth, rowHeight));
+                Label(row.transform, "KJ_Waypoint_Name_" + i, "WAYPOINT", 19, Text, new Vector2(-(rowWidth / 2f - 20f), 0), new Vector2(740, 32), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+                Button(row.transform, "KJ_Waypoint_Track_" + i, "TRACK", new Vector2(339, 0), new Vector2(132, 36), Accent, OnDark);
+                Button(row.transform, "KJ_Waypoint_Delete_" + i, "DELETE", new Vector2(467, 0), new Vector2(108, 36), Danger, Text);
             }
-            Button(screen, "KJ_Waypoint_Stop", "STOP TRACKING", new Vector2(0, -300), new Vector2(210, 44), Danger, Text);
+
+            Button(screen, "KJ_Waypoint_Stop", "STOP TRACKING", new Vector2(0, -262), new Vector2(240, 44), Danger, Text);
         }
 
         private static void BuildTpa(Transform parent)
         {
             var screen = Screen(parent, "tpa");
-            Label(screen, "KJ_TPA_Help", "Use /tpa <player> to request travel or /tpahere <player> to invite them.\nA successful teleport starts the persistent cooldown.", 17, Text, new Vector2(0, 145), new Vector2(760, 70), TextAnchor.MiddleCenter, FontStyle.Normal);
-            var panel = Panel(screen, "KJ_TPA_RequestPanel", Surface2, new Vector2(0, -30), new Vector2(760, 250));
-            Label(panel.transform, "KJ_TPA_Label", "INCOMING REQUEST", 13, Accent, new Vector2(0, 86), new Vector2(400, 26), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(panel.transform, "KJ_TPA_Requester", "PLAYER", 28, Text, new Vector2(0, 44), new Vector2(520, 46), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(panel.transform, "KJ_TPA_Timer", "30s", 14, Muted, new Vector2(0, 8), new Vector2(200, 24), TextAnchor.MiddleCenter, FontStyle.Normal);
-            Button(panel.transform, "KJ_TPA_Accept", "ACCEPT", new Vector2(-200, -70), new Vector2(180, 48), Success, Text);
-            Button(panel.transform, "KJ_TPA_Deny", "DENY", new Vector2(0, -70), new Vector2(180, 48), Danger, Text);
-            Button(panel.transform, "KJ_TPA_Cancel", "CANCEL MINE", new Vector2(200, -70), new Vector2(180, 48), Surface, Text);
+            Label(screen, "KJ_TPA_Help", "Use /tpa <player> to request travel, or /tpahere <player> to invite them.\nA successful teleport starts the persistent cooldown.", 15, Muted, new Vector2(-ContentWidth / 2f, 208), new Vector2(ContentWidth, 48), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            var panel = Panel(screen, "KJ_TPA_RequestPanel", Card, new Vector2(0, -40), new Vector2(900, 260));
+            var marker = Panel(panel.transform, "KJ_TPA_RequestPanel_Marker", Accent, new Vector2(-447, 0), new Vector2(6, 260));
+            marker.GetComponent<Image>().raycastTarget = false;
+
+            Label(panel.transform, "KJ_TPA_Label", "INCOMING REQUEST", 13, Accent, new Vector2(0, 96), new Vector2(500, 22), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(panel.transform, "KJ_TPA_Requester", "PLAYER", 30, Text, new Vector2(0, 48), new Vector2(820, 42), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
+            Label(panel.transform, "KJ_TPA_Timer", "30s", 16, TextDim, new Vector2(0, 10), new Vector2(400, 26), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
+            Button(panel.transform, "KJ_TPA_Accept", "ACCEPT", new Vector2(-232, -76), new Vector2(220, 48), Accent, OnDark);
+            Button(panel.transform, "KJ_TPA_Deny", "DENY", new Vector2(0, -76), new Vector2(220, 48), Danger, Text);
+            Button(panel.transform, "KJ_TPA_Cancel", "CANCEL MINE", new Vector2(232, -76), new Vector2(220, 48), Neutral, Text);
+
+            Label(screen, "KJ_TPA_Note", "Requests expire automatically, and every teleport is re-validated on the server.", 14, Muted, new Vector2(0, -206), new Vector2(ContentWidth, 24), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
 
         private static void BuildHomes(Transform parent)
         {
             var screen = Screen(parent, "homes");
+            Label(screen, "KJ_Home_Help", "Six slots are reserved for permission-based limits. Teleporting honours combat, raid and zone restrictions.", 15, Muted, new Vector2(-ContentWidth / 2f, 214), new Vector2(ContentWidth, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            const float rowWidth = 1058f;
+            const float rowHeight = 56f;
+            var firstRowY = 160f;
             for (var i = 0; i < 6; i++)
             {
-                var y = 170 - (i * 74);
-                var row = Panel(screen, "KJ_Home_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 60));
-                Label(row.transform, "KJ_Home_Name_" + i, "HOME " + (i + 1), 17, Text, new Vector2(-280, 0), new Vector2(220, 40), TextAnchor.MiddleLeft, FontStyle.Bold);
-                Button(row.transform, "KJ_Home_Track_" + i, "TRACK", new Vector2(100, 0), new Vector2(100, 40), Success, Text);
-                Button(row.transform, "KJ_Home_Teleport_" + i, "TELEPORT", new Vector2(220, 0), new Vector2(130, 40), Accent, new Color32(20, 20, 20, 255));
-                Button(row.transform, "KJ_Home_Delete_" + i, "DELETE", new Vector2(335, 0), new Vector2(90, 40), Danger, Text);
+                var row = Panel(screen, "KJ_Home_Row_" + i, Card, new Vector2(0, firstRowY - (i * 64f)), new Vector2(rowWidth, rowHeight));
+                Label(row.transform, "KJ_Home_Name_" + i, "HOME " + (i + 1), 20, Text, new Vector2(-(rowWidth / 2f - 20f), 0), new Vector2(420, 40), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+                Button(row.transform, "KJ_Home_Track_" + i, "TRACK", new Vector2(219, 0), new Vector2(104, 38), Neutral, Text);
+                Button(row.transform, "KJ_Home_Teleport_" + i, "TELEPORT", new Vector2(344, 0), new Vector2(130, 38), Accent, OnDark);
+                Button(row.transform, "KJ_Home_Delete_" + i, "DELETE", new Vector2(469, 0), new Vector2(104, 38), Danger, Text);
             }
-            Button(screen, "KJ_Home_Add", "+ CREATE HOME", new Vector2(0, -286), new Vector2(220, 44), Surface2, Text);
+
+            Button(screen, "KJ_Home_Add", "+ CREATE HOME", new Vector2(0, -216), new Vector2(300, 44), Neutral, Text);
         }
 
         private static void BuildKits(Transform parent)
         {
             var screen = Screen(parent, "kits");
+            Label(screen, "KJ_Kit_Help", "Claim cooldowns are per kit and persist across sessions.", 15, Muted, new Vector2(-ContentWidth / 2f, 214), new Vector2(ContentWidth, 24), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            const float rowWidth = 1058f;
+            const float rowHeight = 46f;
+            var firstRowY = 165f;
             for (var i = 0; i < 8; i++)
             {
-                var y = 184 - (i * 58);
-                var row = Panel(screen, "KJ_Kit_Row_" + i, Surface2, new Vector2(0, y), new Vector2(790, 48));
-                Label(row.transform, "KJ_Kit_Name_" + i, "KIT", 16, Text, new Vector2(-285, 0), new Vector2(250, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
-                Label(row.transform, "KJ_Kit_Cooldown_" + i, "READY", 13, Muted, new Vector2(90, 0), new Vector2(160, 36), TextAnchor.MiddleRight, FontStyle.Normal);
-                Button(row.transform, "KJ_Kit_Claim_" + i, "CLAIM", new Vector2(300, 0), new Vector2(130, 36), Accent, new Color32(20, 20, 20, 255));
+                var row = Panel(screen, "KJ_Kit_Row_" + i, Card, new Vector2(0, firstRowY - (i * RowPitch)), new Vector2(rowWidth, rowHeight));
+                Label(row.transform, "KJ_Kit_Name_" + i, "KIT", 19, Text, new Vector2(-(rowWidth / 2f - 20f), 0), new Vector2(560, 32), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+                Label(row.transform, "KJ_Kit_Cooldown_" + i, "READY", 15, Muted, new Vector2(240, 0), new Vector2(200, 32), TextAnchor.MiddleRight, FontStyle.Normal, _body);
+                Button(row.transform, "KJ_Kit_Claim_" + i, "CLAIM", new Vector2(461, 0), new Vector2(120, 36), Accent, OnDark);
             }
         }
 
         private static void BuildStats(Transform parent)
         {
             var screen = Screen(parent, "stats");
-            StatCard(screen, "KILLS", "KJ_Stats_Kills", -260, 130);
-            StatCard(screen, "DEATHS", "KJ_Stats_Deaths", 0, 130);
-            StatCard(screen, "KDR", "KJ_Stats_KDR", 260, 130);
-            StatCard(screen, "ZOMBIES", "KJ_Stats_Zombies", -260, -25);
-            StatCard(screen, "HEADSHOTS", "KJ_Stats_Headshots", 0, -25);
-            StatCard(screen, "AIRDROPS", "KJ_Stats_Airdrops", 260, -25);
-            WideStat(screen, "PLAYTIME", "KJ_Stats_Playtime", -190);
-            WideStat(screen, "LONGEST LIFE", "KJ_Stats_LongestLife", -245);
+            StatCard(screen, "KILLS", "KJ_Stats_Kills", -360, 152);
+            StatCard(screen, "DEATHS", "KJ_Stats_Deaths", 0, 152);
+            StatCard(screen, "KDR", "KJ_Stats_KDR", 360, 152);
+            StatCard(screen, "ZOMBIES", "KJ_Stats_Zombies", -360, 14);
+            StatCard(screen, "HEADSHOTS", "KJ_Stats_Headshots", 0, 14);
+            StatCard(screen, "AIRDROPS", "KJ_Stats_Airdrops", 360, 14);
+            WideStat(screen, "PLAYTIME", "KJ_Stats_Playtime", -78);
+            WideStat(screen, "LONGEST LIFE", "KJ_Stats_LongestLife", -134);
+            Label(screen, "KJ_Stats_Note", "Statistics persist across sessions and are stored server-side.", 14, Muted, new Vector2(0, -212), new Vector2(ContentWidth, 24), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
 
         private static void BuildAirdrop(Transform parent)
         {
             var screen = Screen(parent, "airdrop");
-            Label(screen, "KJ_Airdrop_State", "STANDBY", 15, Accent, new Vector2(0, 150), new Vector2(300, 30), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(screen, "KJ_Airdrop_Region", "NO ACTIVE DROP", 32, Text, new Vector2(0, 95), new Vector2(720, 52), TextAnchor.MiddleCenter, FontStyle.Bold);
-            var card = Panel(screen, "KJ_Airdrop_Card", Surface2, new Vector2(0, -45), new Vector2(650, 180));
-            Label(card.transform, "KJ_Airdrop_DistanceLabel", "DISTANCE", 12, Muted, new Vector2(-165, 45), new Vector2(220, 24), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(card.transform, "KJ_Airdrop_Distance", "-", 28, Text, new Vector2(-165, 0), new Vector2(220, 50), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(card.transform, "KJ_Airdrop_TimerLabel", "OBJECTIVE TIMER", 12, Muted, new Vector2(165, 45), new Vector2(220, 24), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(card.transform, "KJ_Airdrop_Timer", "-", 28, Text, new Vector2(165, 0), new Vector2(220, 50), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(screen, "KJ_Airdrop_Warning", "TPA / HOME / KIT and configured building actions are blocked inside the active objective radius.", 15, Muted, new Vector2(0, -190), new Vector2(760, 50), TextAnchor.MiddleCenter, FontStyle.Normal);
+            Label(screen, "KJ_Airdrop_State", "STANDBY", 14, Accent, new Vector2(0, 200), new Vector2(400, 24), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(screen, "KJ_Airdrop_Region", "NO ACTIVE DROP", 30, Text, new Vector2(0, 152), new Vector2(ContentWidth, 42), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
+
+            var card = Panel(screen, "KJ_Airdrop_Card", Card, new Vector2(0, -20), new Vector2(900, 220));
+            Label(card.transform, "KJ_Airdrop_DistanceLabel", "DISTANCE", 14, Muted, new Vector2(-225, 46), new Vector2(360, 22), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(card.transform, "KJ_Airdrop_Distance", "-", 44, Text, new Vector2(-225, -14), new Vector2(380, 60), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
+            Label(card.transform, "KJ_Airdrop_TimerLabel", "OBJECTIVE TIMER", 14, Muted, new Vector2(225, 46), new Vector2(360, 22), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(card.transform, "KJ_Airdrop_Timer", "-", 44, Text, new Vector2(225, -14), new Vector2(380, 60), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
+
+            Label(screen, "KJ_Airdrop_Warning", "TPA, homes, kits and configured building actions are blocked inside the active objective radius.", 15, Warning, new Vector2(0, -204), new Vector2(ContentWidth, 28), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
 
         private static void BuildAdmin(Transform parent)
         {
             var screen = Screen(parent, "admin");
-            Label(screen, "KJ_Admin_Name", "STAFF", 28, Text, new Vector2(0, 135), new Vector2(500, 44), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(screen, "KJ_Admin_State", "God=False  Vanish=False", 15, Muted, new Vector2(0, 90), new Vector2(560, 30), TextAnchor.MiddleCenter, FontStyle.Normal);
-            Button(screen, "KJ_Admin_God", "TOGGLE GOD", new Vector2(-150, 10), new Vector2(240, 54), Surface2, Text);
-            Button(screen, "KJ_Admin_Vanish", "TOGGLE VANISH", new Vector2(150, 10), new Vector2(240, 54), Surface2, Text);
-            Label(screen, "KJ_Admin_Help", "Targeted moderation remains command-based for clear audit logs:\n/warn  /mute  /kick  /kjban  /kjunban  /inspect", 16, Text, new Vector2(0, -120), new Vector2(720, 90), TextAnchor.MiddleCenter, FontStyle.Normal);
+            Label(screen, "KJ_Admin_Name", "STAFF", 30, Text, new Vector2(0, 176), new Vector2(900, 42), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
+            Label(screen, "KJ_Admin_State", "God=False  Vanish=False", 16, TextDim, new Vector2(0, 128), new Vector2(900, 26), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
+            Button(screen, "KJ_Admin_God", "TOGGLE GOD", new Vector2(-158, 40), new Vector2(300, 56), Neutral, Text);
+            Button(screen, "KJ_Admin_Vanish", "TOGGLE VANISH", new Vector2(158, 40), new Vector2(300, 56), Neutral, Text);
+            Label(screen, "KJ_Admin_Help", "Targeted moderation stays command-based so every action lands in the audit log:\n/warn   /mute   /kick   /kjban   /kjunban   /inspect", 16, TextDim, new Vector2(0, -110), new Vector2(1000, 100), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
 
         private static void BuildToast(Transform parent)
         {
             var screen = Screen(parent, "toast");
-            var toast = Panel(screen, "KJ_Toast", Surface2, new Vector2(0, 0), new Vector2(650, 120));
-            Label(toast.transform, "KJ_Toast_Title", "KANOMJEEN", 16, Accent, new Vector2(0, 25), new Vector2(560, 28), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(toast.transform, "KJ_Toast_Body", "Notification", 17, Text, new Vector2(0, -15), new Vector2(560, 48), TextAnchor.MiddleCenter, FontStyle.Normal);
+            var toast = Panel(screen, "KJ_Toast", Card, new Vector2(0, -196), new Vector2(760, 112));
+            var marker = Panel(toast.transform, "KJ_Toast_Marker", Accent, new Vector2(-377, 0), new Vector2(6, 112));
+            marker.GetComponent<Image>().raycastTarget = false;
+            Label(toast.transform, "KJ_Toast_Title", "KANOMJEEN", 14, Accent, new Vector2(0, 26), new Vector2(700, 24), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(toast.transform, "KJ_Toast_Body", "Notification", 17, Text, new Vector2(0, -14), new Vector2(700, 48), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
+
+        // ---- Primitives ------------------------------------------------------------------------
 
         private static Transform Screen(Transform parent, string name)
         {
@@ -220,32 +314,34 @@ namespace Kanomjeen.EditorTools
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(900, 500);
-            rect.anchoredPosition = new Vector2(0, -35);
+            rect.sizeDelta = new Vector2(ContentWidth, ContentHeight);
+            rect.anchoredPosition = new Vector2(0, ContentCenterY);
             return go.transform;
         }
 
-        private static void CardButton(Transform parent, string name, string title, string subtitle, float x, float y)
+        private static void CardButton(Transform parent, string name, string title, string subtitle, float x, float y, float width, float height)
         {
-            var card = Button(parent, name, string.Empty, new Vector2(x, y), new Vector2(370, 112), Surface2, Text);
-            Label(card.transform, name + "_Title", title, 22, Text, new Vector2(-145, 25), new Vector2(280, 36), TextAnchor.MiddleLeft, FontStyle.Bold);
-            Label(card.transform, name + "_Subtitle", subtitle, 14, Muted, new Vector2(-145, -25), new Vector2(290, 52), TextAnchor.MiddleLeft, FontStyle.Normal);
-            var marker = Panel(card.transform, name + "_Marker", Accent, new Vector2(-176, 0), new Vector2(4, 95));
+            var card = Button(parent, name, string.Empty, new Vector2(x, y), new Vector2(width, height), Card, Text);
+            var left = -(width / 2f) + 20f;
+            Label(card.transform, name + "_Title", title, 24, Text, new Vector2(left, 26), new Vector2(width - 90f, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _display);
+            Label(card.transform, name + "_Subtitle", subtitle, 15, Muted, new Vector2(left, -26), new Vector2(width - 60f, 44), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+
+            var marker = Panel(card.transform, name + "_Marker", Accent, new Vector2(-(width / 2f) + 3f, 0), new Vector2(6, height - 16f));
             marker.GetComponent<Image>().raycastTarget = false;
         }
 
         private static void StatCard(Transform parent, string label, string valueName, float x, float y)
         {
-            var card = Panel(parent, valueName + "_Card", Surface2, new Vector2(x, y), new Vector2(230, 120));
-            Label(card.transform, valueName + "_Label", label, 12, Muted, new Vector2(0, 31), new Vector2(180, 24), TextAnchor.MiddleCenter, FontStyle.Bold);
-            Label(card.transform, valueName, "0", 30, Text, new Vector2(0, -12), new Vector2(190, 48), TextAnchor.MiddleCenter, FontStyle.Bold);
+            var card = Panel(parent, valueName + "_Card", Card, new Vector2(x, y), new Vector2(340, 118));
+            Label(card.transform, valueName + "_Label", label, 14, Muted, new Vector2(0, 34), new Vector2(300, 22), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(card.transform, valueName, "0", 44, Text, new Vector2(0, -16), new Vector2(320, 60), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
         }
 
         private static void WideStat(Transform parent, string label, string valueName, float y)
         {
-            var card = Panel(parent, valueName + "_Card", Surface2, new Vector2(0, y), new Vector2(750, 44));
-            Label(card.transform, valueName + "_Label", label, 12, Muted, new Vector2(-270, 0), new Vector2(180, 30), TextAnchor.MiddleLeft, FontStyle.Bold);
-            Label(card.transform, valueName, "0m 0s", 17, Text, new Vector2(230, 0), new Vector2(250, 30), TextAnchor.MiddleRight, FontStyle.Bold);
+            var card = Panel(parent, valueName + "_Card", Card, new Vector2(0, y), new Vector2(1060, 48));
+            Label(card.transform, valueName + "_Label", label, 14, Muted, new Vector2(-510, 0), new Vector2(300, 30), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
+            Label(card.transform, valueName, "0m 0s", 20, Text, new Vector2(510, 0), new Vector2(400, 30), TextAnchor.MiddleRight, FontStyle.Normal, _strong);
         }
 
         private static GameObject Panel(Transform parent, string name, Color color, Vector2 pos, Vector2 size)
@@ -257,7 +353,10 @@ namespace Kanomjeen.EditorTools
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = size;
             rect.anchoredPosition = pos;
-            var image = go.GetComponent<Image>(); image.color = color;
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            image.sprite = _panelSprite;
+            image.type = Image.Type.Sliced;
             return go;
         }
 
@@ -267,43 +366,80 @@ namespace Kanomjeen.EditorTools
             var button = go.AddComponent<Button>();
             button.targetGraphic = go.GetComponent<Image>();
             var colors = button.colors;
-            colors.highlightedColor = Brighten(color, 1.12f);
-            colors.pressedColor = Brighten(color, 0.82f);
+            // Reference ColorBlock: the image carries the colour, the block only shades it.
+            colors.normalColor = Rgba(0xFF, 0xFF, 0xFF, 0xFF);
+            colors.highlightedColor = Rgba(0xF5, 0xF5, 0xF5, 0xFF);
+            colors.pressedColor = Rgba(0xC8, 0xC8, 0xC8, 0xFF);
             colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = Rgba(0xC8, 0xC8, 0xC8, 0x80);
             button.colors = colors;
-            if (!string.IsNullOrEmpty(caption)) Label(go.transform, name + "_Text", caption, 14, textColor, Vector2.zero, size - new Vector2(12, 8), TextAnchor.MiddleCenter, FontStyle.Bold);
+
+            if (!string.IsNullOrEmpty(caption))
+                Label(go.transform, name + "_Text", caption, 14, textColor, Vector2.zero, size - new Vector2(16, 10), TextAnchor.MiddleCenter, FontStyle.Normal, _display);
             return go;
         }
 
-        private static Text Label(Transform parent, string name, string text, int size, Color color, Vector2 pos, Vector2 rectSize, TextAnchor anchor, FontStyle style)
+        private static Text Label(Transform parent, string name, string text, int size, Color color, Vector2 pos, Vector2 rectSize, TextAnchor anchor, FontStyle style, Font font)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
 
-            // IMPORTANT: `pos` is treated as the aligned edge/point, not always the
-            // centre of the text rect. The previous implementation forced a 0.5/0.5
-            // pivot for every label. For MiddleLeft labels this shifted the rendered
-            // text left by half of rectSize.x, which is why card titles/subtitles were
-            // visibly outside their panels in-game. Match the RectTransform pivot to
-            // the TextAnchor so the authored coordinates remain intuitive/stable.
+            // `pos` is the aligned edge/point, so the pivot must follow the TextAnchor. A centre pivot
+            // on a MiddleLeft label shifts the drawn text left by half the rect width (that bug shipped
+            // once; ValidateTextLayout now enforces the pairing).
             rect.pivot = PivotFor(anchor);
             rect.anchoredPosition = pos;
             rect.sizeDelta = rectSize;
 
             var label = go.GetComponent<Text>();
             label.text = text;
-            label.font = _font;
+            label.font = font != null ? font : _body;
             label.fontSize = size;
             label.fontStyle = style;
             label.alignment = anchor;
             label.color = color;
+            label.supportRichText = true;
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Truncate;
             label.raycastTarget = false;
             return label;
         }
+
+        // ---- Asset loading ---------------------------------------------------------------------
+
+        private static void LoadFonts()
+        {
+            _body = LoadFont(BodyFontPath);
+            _strong = LoadFont(StrongFontPath) ?? _body;
+            _display = LoadFont(DisplayFontPath) ?? _strong;
+            if (LoadFont(BodyFontPath) == null)
+                Debug.LogWarning("[Kanomjeen] Kanit fonts not found under " + FontFolder + ". The prefab will build with the Unity fallback font and Thai/display typography must not ship until this is fixed.");
+        }
+
+        private static Font LoadFont(string path)
+        {
+            var font = AssetDatabase.LoadAssetAtPath<Font>(path);
+            if (font != null) return font;
+            var builtin = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            return builtin != null ? builtin : Resources.GetBuiltinResource<Font>("Arial.ttf");
+        }
+
+        private static void LoadSprites()
+        {
+            // Unity's built-in nine-slice sprites, exactly what the reference Effects use for their
+            // panels and buttons. They live in unity_builtin_extra (AssetDatabase) rather than the
+            // default resources (Resources), and resolve on the client from the game's own build.
+            _panelSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            _insetSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/InputFieldBackground.psd");
+            if (_panelSprite == null)
+                Debug.LogWarning("[Kanomjeen] Built-in UISprite not found; panels will render as flat colour.");
+            if (_insetSprite == null)
+                Debug.LogWarning("[Kanomjeen] Built-in InputFieldBackground not found; recessed rows will render as flat colour.");
+        }
+
+        // ---- Validation ------------------------------------------------------------------------
 
         private static void ValidateTextLayout(GameObject root)
         {
@@ -325,6 +461,16 @@ namespace Kanomjeen.EditorTools
 
             if (failures > 0)
                 throw new System.InvalidOperationException("Kanomjeen UI layout validation failed for " + failures + " text element(s). Fix pivots before exporting the Workshop bundle.");
+
+            // Nine-slice panels must keep a sliced sprite, otherwise the shipped Effect loses its
+            // rounded reference look without any visible error.
+            var images = root.GetComponentsInChildren<Image>(true);
+            for (var i = 0; i < images.Length; i++)
+            {
+                var image = images[i];
+                if (image.sprite == null || image.type == Image.Type.Sliced) continue;
+                Debug.LogWarning("[Kanomjeen] Image " + GetHierarchyPath(image.transform) + " has a sprite but is not Sliced.");
+            }
         }
 
         private static string GetHierarchyPath(Transform transform)
@@ -379,12 +525,6 @@ namespace Kanomjeen.EditorTools
             return new Vector2(x, y);
         }
 
-        private static void AddAccent(Transform shell)
-        {
-            var accent = Panel(shell, "KJ_Accent", Accent, new Vector2(-487, 0), new Vector2(6, 700));
-            accent.GetComponent<Image>().raycastTarget = false;
-        }
-
         private static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
@@ -399,9 +539,9 @@ namespace Kanomjeen.EditorTools
             rect.anchoredPosition = Vector2.zero;
         }
 
-        private static Color Brighten(Color color, float multiplier)
+        private static Color Rgba(int r, int g, int b, int a)
         {
-            return new Color(Mathf.Clamp01(color.r * multiplier), Mathf.Clamp01(color.g * multiplier), Mathf.Clamp01(color.b * multiplier), color.a);
+            return new Color(r / 255f, g / 255f, b / 255f, a / 255f);
         }
     }
 }

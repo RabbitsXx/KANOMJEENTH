@@ -11,7 +11,9 @@ The projects reference RocketModFix/LDM/Unturned/Unity compile-redist packages c
 ## Workshop/UI
 The repository does not contain Unturned's `Project.unitypackage`; obtain it from the installed game's `Extras/Sources` directory as documented by Smartly Dressed Games.
 
-The Workshop Unity project bundles Noto Sans Thai from the official Google Fonts repository as `KanomjeenThai.ttf`. Noto Sans Thai is distributed under the SIL Open Font License 1.1. The license is preserved at `workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/OFL.txt`, and the upstream source is https://github.com/google/fonts/tree/main/ofl/notosansthai.
+The Workshop Unity project bundles **Kanit** (Regular/SemiBold/Bold) from the official Google Fonts repository. Kanit is distributed under the SIL Open Font License 1.1; the license text is preserved at `workshop-ui/UnityProject/Assets/KanomjeenUI/Fonts/OFL.txt`, the upstream source is https://github.com/google/fonts/tree/main/ofl/kanit, and the verified blob hashes are recorded in `Fonts/README.md`.
+
+No art, font or code was copied from the commercial reference Effects that were studied for behaviour and style. Their bundles (`supernovea-itemshoppingmall.masterbundle`, `supernovea-rankquest.masterbundle`) were read with the in-repo `BundleInspector` editor tool to measure layout numbers, palette values and font names; the Kanomjeen UI was then built independently with its own colours, geometry and element naming. The fonts those Effects embed (Kanit, Oswald, Anton, Bangers) are all OFL, but only Kanit was adopted here, taken from the upstream Google Fonts repository rather than extracted from their bundles.
 
 ## License gate for future borrowed code
 Before copying any code from another plugin:
