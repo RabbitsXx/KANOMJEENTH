@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-staging — 2026-09-14 HUD overlay anchoring fix
+
+- Fixed the HUD and minimap builder resetting both overlays to the canvas center after their intended positions were assigned.
+- Re-exported the Unity 2022.3.62f3 Workshop bundle set; the client must receive the updated Workshop item before visual QA.
+
 ## 0.1.0-staging — 2026-09-14 native HUD bridge prototype
 
 - Added a server-driven HUD snapshot for Health, Food, Water, Virus, Stamina and Oxygen.

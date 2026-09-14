@@ -115,8 +115,8 @@ namespace Kanomjeen.EditorTools
 
         private static void BuildHudOverlay(Transform root)
         {
+        // Keep the requested overlay position; do not recenter HUD elements.
             var hud = Panel(root, "KJ_Hud", Rgba(0x08, 0x12, 0x18, 0xE8), new Vector2(0, -470), new Vector2(1120, 104));
-            AnchorCenter(hud.GetComponent<RectTransform>());
             Label(hud.transform, "KJ_Hud_Label_Health", "HEALTH", 12, Muted, new Vector2(-420, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
             Label(hud.transform, "KJ_Hud_Health", "100", 24, Text, new Vector2(-420, -12), new Vector2(180, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
             Label(hud.transform, "KJ_Hud_Label_Food", "FOOD", 12, Muted, new Vector2(-170, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
@@ -133,7 +133,6 @@ namespace Kanomjeen.EditorTools
         private static void BuildMinimapOverlay(Transform root)
         {
             var map = Panel(root, "KJ_Minimap", Rgba(0x08, 0x12, 0x18, 0xE8), new Vector2(-760, 350), new Vector2(300, 300));
-            AnchorCenter(map.GetComponent<RectTransform>());
             var surface = Panel(map.transform, "KJ_Minimap_Surface", Rgba(0x5E, 0x9C, 0xB8, 0xFF), Vector2.zero, new Vector2(250, 250));
             surface.GetComponent<Image>().sprite = _insetSprite;
             surface.GetComponent<Image>().type = Image.Type.Sliced;
