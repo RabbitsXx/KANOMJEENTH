@@ -5,6 +5,10 @@
 - Fixed the HUD and minimap builder resetting both overlays to the canvas center after their intended positions were assigned.
 - Re-exported the Unity 2022.3.62f3 Workshop bundle set; the client must receive the updated Workshop item before visual QA.
 
+## 0.1.0-staging — 2026-09-14 immediate HUD snapshot
+
+- Pushes the first live HUD snapshot immediately when a player connects, before the repeating update loop begins.
+
 ## 0.1.0-staging — 2026-09-14 native HUD bridge prototype
 
 - Added a server-driven HUD snapshot for Health, Food, Water, Virus, Stamina and Oxygen.

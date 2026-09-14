@@ -234,7 +234,11 @@ namespace Kanomjeen.Core
         private void OnPlayerConnected(UnturnedPlayer player)
         {
             Waypoints?.Sync(player);
-            if (Configuration.Instance.EnableUi) Ui?.ShowHud(player);
+            if (Configuration.Instance.EnableUi)
+            {
+                Ui?.ShowHud(player);
+                Ui?.PushHud(player, HudSnapshot.From(player));
+            }
         }
 
         private void OnPlayerDamaged(Player nativePlayer, ref EDeathCause cause, ref ELimb limb, ref CSteamID killerId,
