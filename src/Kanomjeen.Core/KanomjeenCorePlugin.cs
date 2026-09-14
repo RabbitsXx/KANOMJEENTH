@@ -68,6 +68,11 @@ namespace Kanomjeen.Core
             InvokeRepeating(nameof(FlushPersistence), flush, flush);
             if (Waypoints != null) InvokeRepeating(nameof(SweepWaypoints), 5f, 5f);
             if (Configuration.Instance.EnableUi) InvokeRepeating(nameof(PushHud), 1f, 0.2f);
+            if (Configuration.Instance.EnableUi)
+            {
+                foreach (var steamPlayer in Provider.clients)
+                    Ui.ShowHud(UnturnedPlayer.FromSteamPlayer(steamPlayer));
+            }
             Logger.Log("[Kanomjeen.Core] Waypoints enabled in " + Configuration.Instance.WaypointMode + " mode. Native Unturned map markers are used; no client minimap module is installed.");
         }
 
