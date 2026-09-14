@@ -21,6 +21,7 @@ namespace Kanomjeen.Core
         public static KanomjeenCorePlugin Instance { get; private set; }
 
         private WaypointUi waypointUi;
+        private DateTime lastHudDiagnosticUtc = DateTime.MinValue;
         private WaypointUi WaypointsUi => waypointUi ?? (waypointUi = new WaypointUi(this));
 
         public KanomjeenCoreConfiguration Config => Configuration.Instance;
@@ -55,6 +56,7 @@ namespace Kanomjeen.Core
             if (Configuration.Instance.EnableWaypoints)
                 Waypoints = new WaypointService(Path.Combine(baseDir, "Kanomjeen.Core.waypoints.xml"), () => Configuration.Instance);
             Ui = new UiService(Configuration.Instance.EnableUi ? Configuration.Instance.UiEffectId : (ushort)0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
+            Logger.Log("[Kanomjeen.HUD] init enabled=" + Configuration.Instance.EnableUi + " effectId=" + Configuration.Instance.UiEffectId + " key=" + Configuration.Instance.UiKey);
             Ui.Subscribe();
             Ui.ButtonClicked += OnUiButton;
 
@@ -214,10 +216,27 @@ namespace Kanomjeen.Core
         private void PushHud()
         {
             if (Ui == null || !Ui.IsConfigured) return;
+            var total = 0;
+            var active = 0;
+            var sent = 0;
+            var sample = "none";
             foreach (var steamPlayer in Provider.clients)
             {
+                total++;
                 var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
-                if (player != null && Ui.IsHudActive(player)) Ui.PushHud(player, HudSnapshot.From(player));
+                if (player != null && Ui.IsHudActive(player))
+                {
+                    active++;
+                    var snapshot = HudSnapshot.From(player);
+                    Ui.PushHud(player, snapshot);
+                    sent++;
+                    if (sample == "none") sample = player.DisplayName + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0");
+                }
+            }
+            if ((DateTime.UtcNow - lastHudDiagnosticUtc).TotalSeconds >= 5)
+            {
+                lastHudDiagnosticUtc = DateTime.UtcNow;
+                Logger.Log("[Kanomjeen.HUD] tick total=" + total + " active=" + active + " sent=" + sent + " sample=" + sample);
             }
         }
 
@@ -236,8 +255,11 @@ namespace Kanomjeen.Core
             Waypoints?.Sync(player);
             if (Configuration.Instance.EnableUi)
             {
+                Logger.Log("[Kanomjeen.HUD] connect player=" + player.DisplayName + " id=" + player.Id + " activeBefore=" + Ui.IsHudActive(player));
                 Ui?.ShowHud(player);
-                Ui?.PushHud(player, HudSnapshot.From(player));
+                var snapshot = HudSnapshot.From(player);
+                Ui?.PushHud(player, snapshot);
+                Logger.Log("[Kanomjeen.HUD] initial player=" + player.DisplayName + " activeAfter=" + Ui.IsHudActive(player) + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0"));
             }
         }
 

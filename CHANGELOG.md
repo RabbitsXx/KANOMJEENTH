@@ -9,6 +9,10 @@
 
 - Pushes the first live HUD snapshot immediately when a player connects, before the repeating update loop begins.
 
+## 0.1.0-staging — 2026-09-14 HUD diagnostics
+
+- Added throttled server logs for HUD initialization, active sessions, snapshot values and update counts during local integration testing.
+
 ## 0.1.0-staging — 2026-09-14 native HUD bridge prototype
 
 - Added a server-driven HUD snapshot for Health, Food, Water, Virus, Stamina and Oxygen.
