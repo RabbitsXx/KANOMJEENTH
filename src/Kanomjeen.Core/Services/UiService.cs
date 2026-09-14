@@ -30,6 +30,8 @@ namespace Kanomjeen.Core.Services
         private readonly Dictionary<string, string> activeScreens = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly HashSet<string> activeHud = new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> hudZoom = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, uint> lastExperience = new Dictionary<string, uint>(StringComparer.Ordinal);
+        private readonly Dictionary<string, DateTime> experienceRewardExpiry = new Dictionary<string, DateTime>(StringComparer.Ordinal);
 
         public event EventHandler<UiButtonEventArgs> ButtonClicked;
 
@@ -143,22 +145,25 @@ namespace Kanomjeen.Core.Services
             });
             activeHud.Add(player.Id);
             activeScreens.Remove(player.Id);
+            lastExperience[player.Id] = HudSnapshot.From(player).Experience;
+            experienceRewardExpiry.Remove(player.Id);
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, false);
-            ShowNativeSurvivalWidgets(player);
-            SetVisible(player, "KJ_Hud", false);
+            HideNativeSurvivalWidgets(player);
+            SetVisible(player, "KJ_Hud", true);
+            SetVisible(player, "KJ_Hud_Reward", false);
             SendVisibility(player, "KJ_Dim", false);
             SendVisibility(player, "KJ_Root", false);
         }
 
-        private static void ShowNativeSurvivalWidgets(UnturnedPlayer player)
+        private static void HideNativeSurvivalWidgets(UnturnedPlayer player)
         {
             if (player?.Player == null) return;
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowHealth, true);
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowFood, true);
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowWater, true);
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowVirus, true);
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowStamina, true);
-            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowOxygen, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowHealth, false);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowFood, false);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowWater, false);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowVirus, false);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowStamina, false);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowOxygen, false);
         }
 
         /// <summary>True when this player currently holds an open Kanomjeen UI session.</summary>
@@ -192,16 +197,16 @@ namespace Kanomjeen.Core.Services
             SendVisibility(player, childName, visible);
         }
 
-        private void SendVisibility(UnturnedPlayer player, string childName, bool visible)
-        {
-            if (!IsConfigured || player?.Player == null || string.IsNullOrEmpty(childName)) return;
-            UiGuard.Run("visibility:" + childName, () => EffectManager.sendUIEffectVisibility(key, player.CSteamID, true, childName, visible));
-        }
-
         private void SetHudBar(UnturnedPlayer player, string suffix, byte value)
         {
             var filled = Math.Min(10, (value + 9) / 10);
             for (var i = 0; i < 10; i++) SetVisible(player, "KJ_Hud_" + suffix + "_Bar_" + i, i < filled);
+        }
+
+        private void SendVisibility(UnturnedPlayer player, string childName, bool visible)
+        {
+            if (!IsConfigured || player?.Player == null || string.IsNullOrEmpty(childName)) return;
+            UiGuard.Run("visibility:" + childName, () => EffectManager.sendUIEffectVisibility(key, player.CSteamID, true, childName, visible));
         }
 
         public void AdjustHudZoom(UnturnedPlayer player, int delta)
@@ -223,6 +228,31 @@ namespace Kanomjeen.Core.Services
         {
             if (!IsConfigured || player?.Player == null || snapshot == null || !activeHud.Contains(player.Id)) return;
             SetHudZoomVisibility(player, hudZoom.TryGetValue(player.Id, out var zoom) ? zoom : 50);
+            SetText(player, "KJ_Hud_Health", snapshot.Health.ToString());
+            SetText(player, "KJ_Hud_Food", snapshot.Food.ToString());
+            SetText(player, "KJ_Hud_Water", snapshot.Water.ToString());
+            SetText(player, "KJ_Hud_Virus", snapshot.Virus.ToString());
+            SetText(player, "KJ_Hud_Stamina", snapshot.Stamina.ToString());
+            SetText(player, "KJ_Hud_Oxygen", snapshot.Oxygen.ToString());
+            SetText(player, "KJ_Hud_XP", "XP " + snapshot.Experience.ToString("N0"));
+            if (lastExperience.TryGetValue(player.Id, out var previous) && snapshot.Experience > previous)
+            {
+                SetText(player, "KJ_Hud_Reward", "+" + (snapshot.Experience - previous).ToString("N0") + " XP");
+                SetVisible(player, "KJ_Hud_Reward", true);
+                experienceRewardExpiry[player.Id] = DateTime.UtcNow.AddSeconds(2.5);
+            }
+            else if (experienceRewardExpiry.TryGetValue(player.Id, out var expiry) && DateTime.UtcNow >= expiry)
+            {
+                SetVisible(player, "KJ_Hud_Reward", false);
+                experienceRewardExpiry.Remove(player.Id);
+            }
+            lastExperience[player.Id] = snapshot.Experience;
+            SetHudBar(player, "Health", snapshot.Health);
+            SetHudBar(player, "Food", snapshot.Food);
+            SetHudBar(player, "Water", snapshot.Water);
+            SetHudBar(player, "Virus", snapshot.Virus);
+            SetHudBar(player, "Stamina", snapshot.Stamina);
+            SetHudBar(player, "Oxygen", snapshot.Oxygen);
             SetText(player, "KJ_Map_Bearing", snapshot.Bearing.ToString("000") + "°");
             SetText(player, "KJ_Map_Direction", snapshot.Direction);
             SetText(player, "KJ_Map_Coords", "X " + snapshot.X.ToString("0") + "  Y " + snapshot.Y.ToString("0") + "  Z " + snapshot.Z.ToString("0"));
@@ -253,6 +283,8 @@ namespace Kanomjeen.Core.Services
             activeScreens.Remove(playerId);
             activeHud.Remove(playerId);
             hudZoom.Remove(playerId);
+            lastExperience.Remove(playerId);
+            experienceRewardExpiry.Remove(playerId);
         }
 
         private void OnEffectButtonClicked(Player nativePlayer, string buttonName)

@@ -33,6 +33,7 @@ namespace Kanomjeen.Core.Configuration
         public short UiKey = 23001;
         public string UiContractVersion = "1.0";
         public bool EnableWaypoints = true;
+        public uint ZombieKillExperience = 25u;
         public string WaypointMode = "FallbackNativeMarker";
         public int WaypointSavedLimit = 10;
         public int WaypointMaximumPermissionLimit = 30;
@@ -54,6 +55,7 @@ namespace Kanomjeen.Core.Configuration
             UiKey = 23001;
             UiContractVersion = "1.0";
             EnableWaypoints = true;
+            ZombieKillExperience = 25u;
             WaypointMode = "FallbackNativeMarker";
             WaypointSavedLimit = 10;
             WaypointMaximumPermissionLimit = 30;

@@ -117,25 +117,43 @@ namespace Kanomjeen.EditorTools
 
         private static void BuildHudOverlay(Transform root)
         {
-            var hud = Panel(root, "KJ_Hud", Rgba(0x08, 0x12, 0x18, 0xF0), new Vector2(-760, -455), new Vector2(660, 148));
-            HudBar(hud.transform, "Health", "HEALTH", "100", -220, Rgba(0xE0, 0x43, 0x43, 0xFF));
-            HudBar(hud.transform, "Food", "FOOD", "100", 0, Rgba(0xF0, 0xB4, 0x2C, 0xFF));
-            HudBar(hud.transform, "Water", "WATER", "100", 220, Rgba(0x42, 0xA5, 0xF5, 0xFF));
-            Label(hud.transform, "KJ_Hud_Virus", "VIRUS 0", 11, TextDim, new Vector2(0, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Stamina", "STAMINA 100", 11, TextDim, new Vector2(165, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Oxygen", "OXYGEN 100", 11, TextDim, new Vector2(315, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            var hud = new GameObject("KJ_Hud");
+            hud.transform.SetParent(root, false);
+            var hudRect = hud.AddComponent<RectTransform>();
+            hudRect.anchorMin = new Vector2(0f, 0f);
+            hudRect.anchorMax = new Vector2(0f, 0f);
+            hudRect.pivot = new Vector2(0f, 0f);
+            hudRect.anchoredPosition = new Vector2(34f, 34f);
+            hudRect.sizeDelta = new Vector2(300f, 390f);
+
+            Label(hud.transform, "KJ_Hud_Reward", "+250 XP", 20, Rgba(0xF5, 0xC5, 0x42, 0xFF), new Vector2(8f, 350f), new Vector2(240f, 30f), TextAnchor.MiddleLeft, FontStyle.Bold, _strong);
+            Label(hud.transform, "KJ_Hud_XP", "XP 12,450", 26, Color.white, new Vector2(8f, 312f), new Vector2(280f, 36f), TextAnchor.MiddleLeft, FontStyle.Bold, _strong);
+
+            HudMetric(hud.transform, "Health", "HEALTH", "100", 92f, Rgba(0xE7, 0x4C, 0x3C, 0xFF));
+            HudMetric(hud.transform, "Food", "FOOD", "78", 138f, Rgba(0xF5, 0xC5, 0x42, 0xFF));
+            HudMetric(hud.transform, "Water", "WATER", "82", 184f, Rgba(0x42, 0xA5, 0xF5, 0xFF));
+            HudMetric(hud.transform, "Virus", "VIRUS", "100", 230f, Rgba(0x6D, 0xD6, 0x55, 0xFF));
+            HudMetric(hud.transform, "Stamina", "STAMINA", "65", 276f, Rgba(0xF0, 0xB4, 0x2C, 0xFF));
+            HudMetric(hud.transform, "Oxygen", "OXYGEN", "100", 322f, Rgba(0xD8, 0xE1, 0xE8, 0xFF));
         }
 
-        private static void HudBar(Transform parent, string suffix, string title, string initial, float x, Color fill)
+        private static void HudMetric(Transform parent, string suffix, string title, string initial, float y, Color fill)
         {
-            Label(parent, "KJ_Hud_Label_" + suffix, title, 12, Muted, new Vector2(x - 90, 48), new Vector2(180, 18), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
-            Label(parent, "KJ_Hud_" + suffix, initial, 24, Text, new Vector2(x + 90, 48), new Vector2(70, 30), TextAnchor.MiddleRight, FontStyle.Normal, _strong);
-            var track = Panel(parent, "KJ_Hud_" + suffix + "_Track", Rgba(0x36, 0x3D, 0x43, 0xFF), new Vector2(x, 12), new Vector2(180, 18));
-            track.GetComponent<Image>().raycastTarget = false;
+            Label(parent, "KJ_Hud_Label_" + suffix, title, 24, Color.white, new Vector2(8f, y), new Vector2(92f, 30f), TextAnchor.MiddleLeft, FontStyle.Bold, _strong);
+            Label(parent, "KJ_Hud_" + suffix, initial, 24, Color.white, new Vector2(262f, y), new Vector2(34f, 30f), TextAnchor.MiddleRight, FontStyle.Bold, _strong);
+            var track = Panel(parent, "KJ_Hud_" + suffix + "_Track", Rgba(0x12, 0x18, 0x1C, 0xA0), new Vector2(176f, y), new Vector2(150f, 10f));
+            var trackImage = track.GetComponent<Image>();
+            trackImage.sprite = null;
+            trackImage.type = Image.Type.Simple;
+            trackImage.raycastTarget = false;
             for (var i = 0; i < 10; i++)
             {
-                var segment = Panel(parent, "KJ_Hud_" + suffix + "_Bar_" + i, fill, new Vector2(x - 79 + (i * 17.5f), 12), new Vector2(16, 14));
-                segment.GetComponent<Image>().raycastTarget = false;
+                // Adjacent square pieces form one continuous fill with no rounded sprite seams.
+                var bar = Panel(parent, "KJ_Hud_" + suffix + "_Bar_" + i, fill, new Vector2(101f + (i * 15f), y), new Vector2(15f, 10f));
+                var barImage = bar.GetComponent<Image>();
+                barImage.sprite = null;
+                barImage.type = Image.Type.Simple;
+                barImage.raycastTarget = false;
             }
         }
 
@@ -169,11 +187,22 @@ namespace Kanomjeen.EditorTools
         public static void ExportMasterBundle()
         {
             Build();
+            ExportCurrentPrefabBundle();
+        }
+
+        [MenuItem("Kanomjeen/Export Current Prefab Workshop Bundle")]
+        public static void ExportCurrentPrefabWorkshopBundle()
+        {
+            ExportCurrentPrefabBundle();
+        }
+
+        private static void ExportCurrentPrefabBundle()
+        {
 
             var importer = AssetImporter.GetAtPath(OutputPrefab);
             if (importer == null)
             {
-                Debug.LogError("[Kanomjeen] Prefab not found after rebuilding the Workshop UI prefab.");
+                Debug.LogError("[Kanomjeen] Current Workshop UI prefab not found: " + OutputPrefab);
                 return;
             }
 

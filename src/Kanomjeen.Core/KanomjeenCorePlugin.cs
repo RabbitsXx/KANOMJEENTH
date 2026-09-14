@@ -63,6 +63,7 @@ namespace Kanomjeen.Core
             U.Events.OnPlayerDisconnected += OnPlayerDisconnected;
             U.Events.OnPlayerConnected += OnPlayerConnected;
             DamageTool.playerDamaged += OnPlayerDamaged;
+            DamageTool.damageZombieRequested += OnZombieDamageRequested;
             BarricadeManager.onDamageBarricadeRequested += OnBarricadeDamage;
             StructureManager.onDamageStructureRequested += OnStructureDamage;
 
@@ -84,6 +85,7 @@ namespace Kanomjeen.Core
             U.Events.OnPlayerDisconnected -= OnPlayerDisconnected;
             U.Events.OnPlayerConnected -= OnPlayerConnected;
             DamageTool.playerDamaged -= OnPlayerDamaged;
+            DamageTool.damageZombieRequested -= OnZombieDamageRequested;
             BarricadeManager.onDamageBarricadeRequested -= OnBarricadeDamage;
             StructureManager.onDamageStructureRequested -= OnStructureDamage;
 
@@ -255,7 +257,7 @@ namespace Kanomjeen.Core
                     var snapshot = HudSnapshot.From(player);
                     Ui.PushHud(player, snapshot);
                     sent++;
-                    if (sample == "none") sample = player.DisplayName + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0");
+                    if (sample == "none") sample = player.DisplayName + " xp=" + snapshot.Experience + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0");
                 }
             }
             if ((DateTime.UtcNow - lastHudDiagnosticUtc).TotalSeconds >= 5)
@@ -285,7 +287,7 @@ namespace Kanomjeen.Core
                 SyncWaypointTarget(player);
                 var snapshot = HudSnapshot.From(player);
                 Ui?.PushHud(player, snapshot);
-                Logger.Log("[Kanomjeen.HUD] initial player=" + player.DisplayName + " activeAfter=" + Ui.IsHudActive(player) + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0"));
+                Logger.Log("[Kanomjeen.HUD] initial player=" + player.DisplayName + " activeAfter=" + Ui.IsHudActive(player) + " xp=" + snapshot.Experience + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0"));
             }
         }
 
@@ -312,6 +314,19 @@ namespace Kanomjeen.Core
             var attacker = UnturnedPlayer.FromCSteamID(killerId);
             if (attacker != null)
                 PlayerStates.TagCombat(attacker.Id, now, TimeSpan.FromSeconds(Configuration.Instance.CombatCooldownSeconds));
+        }
+
+        private void OnZombieDamageRequested(ref DamageZombieParameters parameters, ref bool shouldAllow)
+        {
+            if (!shouldAllow || parameters.zombie == null || !(parameters.instigator is Player nativePlayer)) return;
+            var player = UnturnedPlayer.FromPlayer(nativePlayer);
+            if (player == null || Configuration.Instance.ZombieKillExperience == 0u) return;
+
+            // This event is raised before Unturned applies the damage. Award only when this
+            // hit is lethal, so the map's zero XP multiplier cannot suppress the server reward.
+            if (parameters.zombie.GetHealth() > parameters.damage) return;
+            player.Experience += Configuration.Instance.ZombieKillExperience;
+            Logger.Log("[Kanomjeen.XP] zombie kill player=" + player.DisplayName + " amount=" + Configuration.Instance.ZombieKillExperience + " total=" + player.Experience);
         }
 
         private void OnBarricadeDamage(CSteamID instigatorSteamID, Transform barricadeTransform, ref ushort pendingTotalDamage,

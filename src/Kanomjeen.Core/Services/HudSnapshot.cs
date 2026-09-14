@@ -12,6 +12,7 @@ namespace Kanomjeen.Core.Services
         public byte Virus;
         public byte Stamina;
         public byte Oxygen;
+        public uint Experience;
         public float Bearing;
         public float X;
         public float Y;
@@ -28,8 +29,13 @@ namespace Kanomjeen.Core.Services
             snapshot.Water = ReadByte(life, "water", "Water");
             snapshot.Virus = ReadByte(life, "virus", "Virus");
             snapshot.Oxygen = ReadByte(life, "oxygen", "Oxygen");
-            var movement = player.Player.movement;
-            snapshot.Stamina = ReadByte(movement, "stamina", "Stamina");
+            // Rocket exposes the authoritative Unturned experience value on the player wrapper.
+            // This is the value persisted for the player, not a client-side UI placeholder.
+            snapshot.Experience = player.Experience;
+            // Rocket's player wrapper exposes the authoritative HUD stamina value directly.
+            // PlayerMovement.stamina is an internal movement value and can remain zero even
+            // when the player's actual stamina bar is full.
+            snapshot.Stamina = player.Stamina;
             var rotation = player.Player.transform.eulerAngles.y;
             snapshot.Bearing = (rotation + 360f) % 360f;
             snapshot.Direction = DirectionFor(snapshot.Bearing);
@@ -68,5 +74,6 @@ namespace Kanomjeen.Core.Services
         }
 
         private static byte Clamp(int value) => (byte)Math.Max(0, Math.Min(100, value));
+
     }
 }

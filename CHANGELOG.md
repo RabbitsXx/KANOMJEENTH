@@ -62,6 +62,13 @@
 
 ## 0.1.0-staging
 
+# Unreleased
+
+- Fixed HUD stamina binding to read `UnturnedPlayer.Stamina`, so the custom six-value HUD shows the real player stamina instead of the internal movement value.
+- Added configurable zombie-kill XP (`ZombieKillExperience`, default 25) through Unturned's `damageZombieRequested` hook; the reward is written to the player's real XP and logged as `[Kanomjeen.XP]`.
+- Kept `Players.Spawn_With_Max_Skills` disabled for the California 2 server configuration and restored the original Workshop map config after testing, avoiding the modified-map warning.
+- Made the HUD XP reward text hide automatically after 2.5 seconds and documented the server/plugin versus Workshop UI boundary.
+
 Initial Kanomjeen integrated staging suite.
 
 ### UI layout hotfix
