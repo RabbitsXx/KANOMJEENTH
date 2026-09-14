@@ -150,6 +150,8 @@ namespace Kanomjeen.Core.Services
         /// <summary>True when this player id currently holds an open Kanomjeen UI session.</summary>
         public bool IsOpen(string playerId) => !string.IsNullOrEmpty(playerId) && activeScreens.ContainsKey(playerId);
 
+        public bool IsHudActive(UnturnedPlayer player) => player != null && activeHud.Contains(player.Id);
+
         /// <summary>
         /// Hide every reusable row of a list before the screen is repopulated. Feature UI classes
         /// must never let a row keep another player's (or an earlier refresh's) content.

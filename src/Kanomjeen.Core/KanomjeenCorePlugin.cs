@@ -217,7 +217,7 @@ namespace Kanomjeen.Core
             foreach (var steamPlayer in Provider.clients)
             {
                 var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
-                if (player != null && Ui.IsOpen(player)) Ui.PushHud(player, HudSnapshot.From(player));
+                if (player != null && Ui.IsHudActive(player)) Ui.PushHud(player, HudSnapshot.From(player));
             }
         }
 
