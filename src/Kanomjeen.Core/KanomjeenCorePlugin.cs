@@ -54,7 +54,9 @@ namespace Kanomjeen.Core
             Cooldowns = new PersistentCooldownService(Path.Combine(baseDir, "Kanomjeen.Core.cooldowns.xml"));
             if (Configuration.Instance.EnableWaypoints)
                 Waypoints = new WaypointService(Path.Combine(baseDir, "Kanomjeen.Core.waypoints.xml"), () => Configuration.Instance);
-            Ui = new UiService(Configuration.Instance.EnableUi ? Configuration.Instance.UiEffectId : (ushort)0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
+            // GUI is disabled during the rebuild. The existing Effect ID/contract metadata stays
+            // in configuration so the new UI can be introduced incrementally later.
+            Ui = new UiService(0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
             Ui.Subscribe();
             Ui.ButtonClicked += OnUiButton;
 

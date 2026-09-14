@@ -45,8 +45,15 @@ namespace Kanomjeen.Core.Services
 
         public bool IsConfigured => effectId != 0;
 
-        public void Subscribe() => EffectManager.onEffectButtonClicked += OnEffectButtonClicked;
-        public void Unsubscribe() => EffectManager.onEffectButtonClicked -= OnEffectButtonClicked;
+        public void Subscribe()
+        {
+            if (IsConfigured) EffectManager.onEffectButtonClicked += OnEffectButtonClicked;
+        }
+
+        public void Unsubscribe()
+        {
+            if (IsConfigured) EffectManager.onEffectButtonClicked -= OnEffectButtonClicked;
+        }
 
         public bool Open(UnturnedPlayer player, string screen, string title = null, string status = null)
         {

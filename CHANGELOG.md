@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-staging — 2026-09-14 removed combined GUI package
+
+- Removed the old combined GUI prefab, editor builders, fonts, exported bundles, and Workshop upload folder.
+- Kept gameplay commands and server-side systems intact; GUI remains disabled until a new per-plugin design is briefed.
+- Verification no longer requires the retired combined GUI assets.
+
+## 0.1.0-staging — 2026-09-14 GUI disabled for rebuild
+
+- Disabled all runtime Workshop GUI entry points while the interface is rebuilt incrementally.
+- Preserved the existing Effect ID, GUID, contract metadata, gameplay systems, and command paths.
+- GUI button event subscriptions are skipped when the UI service is not configured.
+
 ## 0.1.0-staging — 2026-09-14 UI overhaul measured from the reference Effects
 
 - Rebuilt the whole Workshop UI on tokens measured from the two commercial Effects this suite benchmarks against (`Supernovea Itemshop V2` 3477290482, `Supernovea RankQuest V2` 3478575975): `#212121` cards on a translucent `#1A1A1A` table, an opaque black header band, green `#4ADC43` affirmative and red `#9F1B1B` destructive actions, the reference `normal/highlighted/pressed/disabled` ColorBlock, Unity's built-in nine-slice `UISprite`, 1920×1080 canvas matched by width, and a 1180×700 shell whose content band can no longer overlap the header.
