@@ -1,0 +1,11 @@
+{
+  "IsEnabled": true,
+  "Name": "Kanomjeen.Minimap.Client",
+  "Version": "0.1.0.0",
+  "Assemblies": [
+    {
+      "Path": "/Kanomjeen.Minimap.Client.dll",
+      "Role": "Both_Optional"
+    }
+  ]
+}

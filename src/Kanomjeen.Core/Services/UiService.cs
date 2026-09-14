@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Rocket.Unturned.Player;
 using Logger = Rocket.Core.Logging.Logger;
 using SDG.Unturned;
+using UnityEngine;
 
 namespace Kanomjeen.Core.Services
 {
@@ -27,6 +29,7 @@ namespace Kanomjeen.Core.Services
         private readonly string contractVersion;
         private readonly Dictionary<string, string> activeScreens = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly HashSet<string> activeHud = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> hudZoom = new Dictionary<string, int>(StringComparer.Ordinal);
 
         public event EventHandler<UiButtonEventArgs> ButtonClicked;
 
@@ -73,6 +76,7 @@ namespace Kanomjeen.Core.Services
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, true);
             activeScreens[player.Id] = Normalize(screen);
             activeHud.Add(player.Id);
+            hudZoom[player.Id] = 50;
             FocusScreen(player, title, status);
             // FocusScreen() has already reset visibility for every known screen container.
             return true;
@@ -140,8 +144,21 @@ namespace Kanomjeen.Core.Services
             activeHud.Add(player.Id);
             activeScreens.Remove(player.Id);
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, false);
+            ShowNativeSurvivalWidgets(player);
+            SetVisible(player, "KJ_Hud", false);
             SendVisibility(player, "KJ_Dim", false);
             SendVisibility(player, "KJ_Root", false);
+        }
+
+        private static void ShowNativeSurvivalWidgets(UnturnedPlayer player)
+        {
+            if (player?.Player == null) return;
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowHealth, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowFood, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowWater, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowVirus, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowStamina, true);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.ShowOxygen, true);
         }
 
         /// <summary>True when this player currently holds an open Kanomjeen UI session.</summary>
@@ -181,18 +198,49 @@ namespace Kanomjeen.Core.Services
             UiGuard.Run("visibility:" + childName, () => EffectManager.sendUIEffectVisibility(key, player.CSteamID, true, childName, visible));
         }
 
+        private void SetHudBar(UnturnedPlayer player, string suffix, byte value)
+        {
+            var filled = Math.Min(10, (value + 9) / 10);
+            for (var i = 0; i < 10; i++) SetVisible(player, "KJ_Hud_" + suffix + "_Bar_" + i, i < filled);
+        }
+
+        public void AdjustHudZoom(UnturnedPlayer player, int delta)
+        {
+            if (player?.Player == null || !activeHud.Contains(player.Id)) return;
+            if (!hudZoom.TryGetValue(player.Id, out var zoom)) zoom = 50;
+            hudZoom[player.Id] = Math.Max(40, Math.Min(60, zoom + (delta * 10)));
+            SetHudZoomVisibility(player, hudZoom[player.Id]);
+        }
+
+        private void SetHudZoomVisibility(UnturnedPlayer player, int zoom)
+        {
+            SetVisible(player, "KJ_Minimap_Image_Zoom_40", zoom == 40);
+            SetVisible(player, "KJ_Minimap_Image_Zoom_50", zoom == 50);
+            SetVisible(player, "KJ_Minimap_Image_Zoom_60", zoom == 60);
+        }
+
         public void PushHud(UnturnedPlayer player, HudSnapshot snapshot)
         {
             if (!IsConfigured || player?.Player == null || snapshot == null || !activeHud.Contains(player.Id)) return;
-            SetText(player, "KJ_Hud_Health", snapshot.Health.ToString());
-            SetText(player, "KJ_Hud_Food", snapshot.Food.ToString());
-            SetText(player, "KJ_Hud_Water", snapshot.Water.ToString());
-            SetText(player, "KJ_Hud_Virus", snapshot.Virus.ToString());
-            SetText(player, "KJ_Hud_Stamina", snapshot.Stamina.ToString());
-            SetText(player, "KJ_Hud_Oxygen", snapshot.Oxygen.ToString());
+            SetHudZoomVisibility(player, hudZoom.TryGetValue(player.Id, out var zoom) ? zoom : 50);
             SetText(player, "KJ_Map_Bearing", snapshot.Bearing.ToString("000") + "°");
             SetText(player, "KJ_Map_Direction", snapshot.Direction);
             SetText(player, "KJ_Map_Coords", "X " + snapshot.X.ToString("0") + "  Y " + snapshot.Y.ToString("0") + "  Z " + snapshot.Z.ToString("0"));
+            SetVisible(player, "KJ_Map_PlayerMarker", false);
+            var directions = new[] { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+            for (var i = 0; i < directions.Length; i++) SetVisible(player, "KJ_Map_PlayerMarker_" + directions[i], false);
+        }
+
+        public void SetWaypointTarget(UnturnedPlayer player, Vector3 target)
+        {
+            if (player?.Player == null) return;
+            SetText(player, "KJ_Map_Waypoint_Target", string.Format(CultureInfo.InvariantCulture, "{0:0.0}|{1:0.0}|{2:0.0}", target.x, target.y, target.z));
+        }
+
+        public void ClearWaypointTarget(UnturnedPlayer player)
+        {
+            if (player?.Player == null) return;
+            SetText(player, "KJ_Map_Waypoint_Target", string.Empty);
         }
 
         public string GetActiveScreen(string playerId)
@@ -204,13 +252,15 @@ namespace Kanomjeen.Core.Services
         {
             activeScreens.Remove(playerId);
             activeHud.Remove(playerId);
+            hudZoom.Remove(playerId);
         }
 
         private void OnEffectButtonClicked(Player nativePlayer, string buttonName)
         {
             if (nativePlayer == null || string.IsNullOrEmpty(buttonName)) return;
             var player = UnturnedPlayer.FromPlayer(nativePlayer);
-            if (player == null || !activeScreens.TryGetValue(player.Id, out var screen)) return;
+            if (player == null || (!activeScreens.TryGetValue(player.Id, out var screen) && !activeHud.Contains(player.Id))) return;
+            if (string.IsNullOrEmpty(screen)) screen = "hud";
             if (buttonName == "KJ_Close")
             {
                 Close(player);

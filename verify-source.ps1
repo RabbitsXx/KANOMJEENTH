@@ -12,7 +12,10 @@ foreach ($relative in $Required) {
 }
 
 $Projects = Get-ChildItem (Join-Path $Root 'src') -Recurse -Filter '*.csproj'
-if ($Projects.Count -ne 11) { throw "Expected 11 plugin projects, found $($Projects.Count)." }
+$ServerProjects = @($Projects | Where-Object { $_.Directory.Name -ne 'Kanomjeen.Minimap.Client' })
+$ClientProjects = @($Projects | Where-Object { $_.Directory.Name -eq 'Kanomjeen.Minimap.Client' })
+if ($ServerProjects.Count -ne 11) { throw "Expected 11 server plugin projects, found $($ServerProjects.Count)." }
+if ($ClientProjects.Count -ne 1) { throw "Expected 1 client module project, found $($ClientProjects.Count)." }
 
 $SourceFiles = Get-ChildItem (Join-Path $Root 'src') -Recurse -Filter '*.cs'
 $Forbidden = $SourceFiles | Select-String -Pattern 'california\.|namespace\s+Tpa\b' -CaseSensitive:$false

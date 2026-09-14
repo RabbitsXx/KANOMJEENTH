@@ -27,6 +27,7 @@ namespace Kanomjeen.EditorTools
         private const string BodyFontPath = FontFolder + "Kanit-Regular.ttf";
         private const string StrongFontPath = FontFolder + "Kanit-SemiBold.ttf";
         private const string DisplayFontPath = FontFolder + "Kanit-Bold.ttf";
+        private const string CaliforniaMapPath = "Assets/KanomjeenUI/Textures/California2_Map.png";
         private const string MasterBundleName = "kanomjeen_ui.masterbundle";
         private const string MasterBundleOutputFolder = "WorkshopExport";
 
@@ -61,6 +62,7 @@ namespace Kanomjeen.EditorTools
         private static Font _display;
         private static Sprite _panelSprite;
         private static Sprite _insetSprite;
+        private static Sprite _californiaMapSprite;
 
         [MenuItem("Kanomjeen/Build Workshop UI Prefab")]
         public static void Build()
@@ -115,32 +117,52 @@ namespace Kanomjeen.EditorTools
 
         private static void BuildHudOverlay(Transform root)
         {
-        // Keep the requested overlay position; do not recenter HUD elements.
-            var hud = Panel(root, "KJ_Hud", Rgba(0x08, 0x12, 0x18, 0xE8), new Vector2(0, -470), new Vector2(1120, 104));
-            Label(hud.transform, "KJ_Hud_Label_Health", "HEALTH", 12, Muted, new Vector2(-420, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
-            Label(hud.transform, "KJ_Hud_Health", "100", 24, Text, new Vector2(-420, -12), new Vector2(180, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Label_Food", "FOOD", 12, Muted, new Vector2(-170, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
-            Label(hud.transform, "KJ_Hud_Food", "100", 24, Text, new Vector2(-170, -12), new Vector2(180, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Label_Water", "WATER", 12, Muted, new Vector2(80, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
-            Label(hud.transform, "KJ_Hud_Water", "100", 24, Text, new Vector2(80, -12), new Vector2(180, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Label_Virus", "VIRUS", 12, Muted, new Vector2(330, 24), new Vector2(180, 20), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
-            Label(hud.transform, "KJ_Hud_Virus", "0", 24, Text, new Vector2(330, -12), new Vector2(180, 34), TextAnchor.MiddleLeft, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Label_Stamina", "STAMINA", 12, Muted, new Vector2(0, -36), new Vector2(180, 20), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
-            Label(hud.transform, "KJ_Hud_Stamina", "100", 18, Text, new Vector2(0, -60), new Vector2(180, 24), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
-            Label(hud.transform, "KJ_Hud_Oxygen", "100", 18, TextDim, new Vector2(470, -48), new Vector2(120, 24), TextAnchor.MiddleRight, FontStyle.Normal, _strong);
+            var hud = Panel(root, "KJ_Hud", Rgba(0x08, 0x12, 0x18, 0xF0), new Vector2(-760, -455), new Vector2(660, 148));
+            HudBar(hud.transform, "Health", "HEALTH", "100", -220, Rgba(0xE0, 0x43, 0x43, 0xFF));
+            HudBar(hud.transform, "Food", "FOOD", "100", 0, Rgba(0xF0, 0xB4, 0x2C, 0xFF));
+            HudBar(hud.transform, "Water", "WATER", "100", 220, Rgba(0x42, 0xA5, 0xF5, 0xFF));
+            Label(hud.transform, "KJ_Hud_Virus", "VIRUS 0", 11, TextDim, new Vector2(0, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(hud.transform, "KJ_Hud_Stamina", "STAMINA 100", 11, TextDim, new Vector2(165, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+            Label(hud.transform, "KJ_Hud_Oxygen", "OXYGEN 100", 11, TextDim, new Vector2(315, -58), new Vector2(150, 18), TextAnchor.MiddleCenter, FontStyle.Normal, _strong);
+        }
+
+        private static void HudBar(Transform parent, string suffix, string title, string initial, float x, Color fill)
+        {
+            Label(parent, "KJ_Hud_Label_" + suffix, title, 12, Muted, new Vector2(x - 90, 48), new Vector2(180, 18), TextAnchor.MiddleLeft, FontStyle.Normal, _body);
+            Label(parent, "KJ_Hud_" + suffix, initial, 24, Text, new Vector2(x + 90, 48), new Vector2(70, 30), TextAnchor.MiddleRight, FontStyle.Normal, _strong);
+            var track = Panel(parent, "KJ_Hud_" + suffix + "_Track", Rgba(0x36, 0x3D, 0x43, 0xFF), new Vector2(x, 12), new Vector2(180, 18));
+            track.GetComponent<Image>().raycastTarget = false;
+            for (var i = 0; i < 10; i++)
+            {
+                var segment = Panel(parent, "KJ_Hud_" + suffix + "_Bar_" + i, fill, new Vector2(x - 79 + (i * 17.5f), 12), new Vector2(16, 14));
+                segment.GetComponent<Image>().raycastTarget = false;
+            }
         }
 
         private static void BuildMinimapOverlay(Transform root)
         {
-            var map = Panel(root, "KJ_Minimap", Rgba(0x08, 0x12, 0x18, 0xE8), new Vector2(-760, 350), new Vector2(300, 300));
-            var surface = Panel(map.transform, "KJ_Minimap_Surface", Rgba(0x5E, 0x9C, 0xB8, 0xFF), Vector2.zero, new Vector2(250, 250));
-            surface.GetComponent<Image>().sprite = _insetSprite;
-            surface.GetComponent<Image>().type = Image.Type.Sliced;
+            var map = Panel(root, "KJ_Minimap", Rgba(0x08, 0x12, 0x18, 0xE8), new Vector2(760, 350), new Vector2(300, 300));
+            var surface = Panel(map.transform, "KJ_Minimap_Surface", Color.white, Vector2.zero, new Vector2(250, 250));
+            var surfaceImage = surface.GetComponent<Image>();
+            surfaceImage.color = Color.clear;
+            surfaceImage.raycastTarget = false;
+            surface.AddComponent<RectMask2D>();
+            foreach (var zoom in new[] { 4.0f, 5.0f, 6.0f })
+            {
+                var zoomName = ((int)(zoom * 10f)).ToString();
+                var mapImage = Panel(surface.transform, "KJ_Minimap_Image_Zoom_" + zoomName, Color.white, Vector2.zero, new Vector2(250f * zoom, 250f * zoom));
+                mapImage.GetComponent<Image>().sprite = _californiaMapSprite != null ? _californiaMapSprite : _insetSprite;
+                mapImage.GetComponent<Image>().type = _californiaMapSprite != null ? Image.Type.Simple : Image.Type.Sliced;
+                mapImage.GetComponent<Image>().raycastTarget = false;
+                mapImage.SetActive(false);
+            }
+            Button(map.transform, "KJ_Map_ZoomOut", "−", new Vector2(104, -126), new Vector2(36, 30), Neutral, Text);
+            Button(map.transform, "KJ_Map_ZoomIn", "+", new Vector2(145, -126), new Vector2(36, 30), Accent, OnDark);
             Label(map.transform, "KJ_Map_Bearing", "000°", 18, Text, new Vector2(0, 132), new Vector2(120, 24), TextAnchor.MiddleCenter, FontStyle.Bold, _strong);
             Label(map.transform, "KJ_Map_Direction", "N", 20, Text, new Vector2(0, 104), new Vector2(40, 28), TextAnchor.MiddleCenter, FontStyle.Bold, _strong);
-            Label(map.transform, "KJ_Map_PlayerMarker", "▲", 28, Text, new Vector2(0, 0), new Vector2(48, 48), TextAnchor.MiddleCenter, FontStyle.Bold, _strong);
             Label(map.transform, "KJ_Map_Location", "CALIFORNIA 2", 15, Text, new Vector2(0, -132), new Vector2(260, 24), TextAnchor.MiddleCenter, FontStyle.Bold, _strong);
             Label(map.transform, "KJ_Map_Coords", "X 0  Y 0  Z 0", 12, Muted, new Vector2(0, -156), new Vector2(260, 20), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
+            Label(map.transform, "KJ_Map_Waypoint_Target", string.Empty, 1, Color.clear, new Vector2(0, -180), new Vector2(1, 1), TextAnchor.MiddleCenter, FontStyle.Normal, _body);
         }
 
         [MenuItem("Kanomjeen/Export Workshop UI Master Bundle")]
@@ -466,6 +488,18 @@ namespace Kanomjeen.EditorTools
             // default resources (Resources), and resolve on the client from the game's own build.
             _panelSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             _insetSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/InputFieldBackground.psd");
+            AssetDatabase.ImportAsset(CaliforniaMapPath, ImportAssetOptions.ForceUpdate);
+            var mapImporter = AssetImporter.GetAtPath(CaliforniaMapPath) as TextureImporter;
+            if (mapImporter != null && mapImporter.textureType != TextureImporterType.Sprite)
+            {
+                mapImporter.textureType = TextureImporterType.Sprite;
+                mapImporter.spriteImportMode = SpriteImportMode.Single;
+                mapImporter.mipmapEnabled = false;
+                mapImporter.SaveAndReimport();
+            }
+            _californiaMapSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CaliforniaMapPath);
+            if (_californiaMapSprite == null)
+                Debug.LogWarning("[Kanomjeen] California 2 Map.png was not imported as a Sprite; minimap will use the fallback surface.");
             if (_panelSprite == null)
                 Debug.LogWarning("[Kanomjeen] Built-in UISprite not found; panels will render as flat colour.");
             if (_insetSprite == null)

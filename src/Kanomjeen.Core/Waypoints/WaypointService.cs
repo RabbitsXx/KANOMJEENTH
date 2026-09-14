@@ -88,6 +88,11 @@ namespace Kanomjeen.Core.Waypoints
             return !string.IsNullOrEmpty(playerId) && !string.IsNullOrEmpty(waypointId) && store.GetTrackedId(playerId) == waypointId;
         }
 
+        public WaypointRecord GetTracked(UnturnedPlayer player)
+        {
+            return player == null ? null : store.Find(store.GetTrackedId(player.Id));
+        }
+
         public bool Rename(UnturnedPlayer player, string waypointId, string name)
         {
             var waypoint = store.Find(waypointId);

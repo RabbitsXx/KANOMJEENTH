@@ -173,7 +173,14 @@ namespace Kanomjeen.Core
 
         private void OnUiButton(object sender, UiButtonEventArgs e)
         {
-            if (e?.Player == null || Waypoints == null) return;
+            if (e?.Player == null) return;
+            if (e.Screen == "hud")
+            {
+                if (e.Button == "KJ_Map_ZoomIn") Ui?.AdjustHudZoom(e.Player, 1);
+                else if (e.Button == "KJ_Map_ZoomOut") Ui?.AdjustHudZoom(e.Player, -1);
+                return;
+            }
+            if (Waypoints == null) return;
             WaypointsUi.OnButton(e.Player, e.Screen, e.Button);
         }
 
@@ -190,16 +197,24 @@ namespace Kanomjeen.Core
         internal bool WaypointTrack(UnturnedPlayer player, int index)
         {
             var list = Waypoints.GetVisible(player);
-            return index >= 0 && index < list.Count && Waypoints.Track(player, list[index].Id);
+            var ok = index >= 0 && index < list.Count && Waypoints.Track(player, list[index].Id);
+            if (ok) SyncWaypointTarget(player);
+            return ok;
         }
 
         internal bool WaypointDelete(UnturnedPlayer player, int index)
         {
             var list = Waypoints.GetVisible(player);
-            return index >= 0 && index < list.Count && Waypoints.Delete(player, list[index].Id);
+            var ok = index >= 0 && index < list.Count && Waypoints.Delete(player, list[index].Id);
+            if (ok) SyncWaypointTarget(player);
+            return ok;
         }
 
-        internal void WaypointStop(UnturnedPlayer player) => Waypoints?.StopTracking(player);
+        internal void WaypointStop(UnturnedPlayer player)
+        {
+            Waypoints?.StopTracking(player);
+            Ui?.ClearWaypointTarget(player);
+        }
 
         internal void SayWaypoints(UnturnedPlayer player)
         {
@@ -211,7 +226,17 @@ namespace Kanomjeen.Core
         private static void Say(UnturnedPlayer player, string text) { if (player != null) Rocket.Unturned.Chat.UnturnedChat.Say(player, text, Color.cyan); }
 
         private void FlushPersistence() { Cooldowns?.SaveIfDirty(); Waypoints?.SaveIfDirty(); }
-        private void SweepWaypoints() { if (Waypoints == null) return; Waypoints.SweepExpired(); foreach (var steamPlayer in Provider.clients) Waypoints.Sync(UnturnedPlayer.FromSteamPlayer(steamPlayer)); }
+        private void SweepWaypoints()
+        {
+            if (Waypoints == null) return;
+            Waypoints.SweepExpired();
+            foreach (var steamPlayer in Provider.clients)
+            {
+                var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
+                Waypoints.Sync(player);
+                SyncWaypointTarget(player);
+            }
+        }
 
         private void PushHud()
         {
@@ -257,10 +282,19 @@ namespace Kanomjeen.Core
             {
                 Logger.Log("[Kanomjeen.HUD] connect player=" + player.DisplayName + " id=" + player.Id + " activeBefore=" + Ui.IsHudActive(player));
                 Ui?.ShowHud(player);
+                SyncWaypointTarget(player);
                 var snapshot = HudSnapshot.From(player);
                 Ui?.PushHud(player, snapshot);
                 Logger.Log("[Kanomjeen.HUD] initial player=" + player.DisplayName + " activeAfter=" + Ui.IsHudActive(player) + " health=" + snapshot.Health + " food=" + snapshot.Food + " water=" + snapshot.Water + " virus=" + snapshot.Virus + " stamina=" + snapshot.Stamina + " oxygen=" + snapshot.Oxygen + " pos=" + snapshot.X.ToString("0.0") + "," + snapshot.Y.ToString("0.0") + "," + snapshot.Z.ToString("0.0"));
             }
+        }
+
+        private void SyncWaypointTarget(UnturnedPlayer player)
+        {
+            if (player == null || Ui == null || Waypoints == null) return;
+            var waypoint = Waypoints.GetTracked(player);
+            if (waypoint == null) Ui.ClearWaypointTarget(player);
+            else Ui.SetWaypointTarget(player, new Vector3(waypoint.X, waypoint.Y, waypoint.Z));
         }
 
         private void OnPlayerDamaged(Player nativePlayer, ref EDeathCause cause, ref ELimb limb, ref CSteamID killerId,
