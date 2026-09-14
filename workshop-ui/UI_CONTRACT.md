@@ -2,6 +2,26 @@
 
 This contract is shared by the Workshop Effect prefab and the RocketModFix plugins. The server default is `UiContractVersion = 1.0`, Effect ID `51000`, UI key `23001`.
 
+## HUD overlay
+
+The root HUD overlay uses these server-updated text elements. Values are native Unturned player
+percentages and are refreshed server-side at a bounded interval:
+
+- `KJ_Hud_Health`
+- `KJ_Hud_Food`
+- `KJ_Hud_Water`
+- `KJ_Hud_Virus`
+- `KJ_Hud_Stamina`
+- `KJ_Hud_Oxygen`
+
+The minimap overlay is server-driven for orientation and position labels:
+
+- `KJ_Map_Bearing`
+- `KJ_Map_Direction`
+- `KJ_Map_PlayerMarker`
+- `KJ_Map_Location`
+- `KJ_Map_Coords`
+
 ## Security model
 GUI state is presentation only. A click is a request to the server, not authority.
 

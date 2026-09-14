@@ -24,7 +24,7 @@ if ($Forbidden) {
 $CoreConfig = Get-Content (Join-Path $Root 'src/Kanomjeen.Core/Configuration/KanomjeenCoreConfiguration.cs') -Raw
 if ($CoreConfig -notmatch 'UiEffectId\s*=\s*51000') { throw 'Core default UiEffectId is not 51000.' }
 
-Write-Host 'Legacy combined Workshop GUI assets are intentionally absent; per-plugin GUI work is pending.' -ForegroundColor Yellow
+Write-Host 'Workshop GUI assets are present; HUD data bridge is server-driven and requires live client QA.' -ForegroundColor Yellow
 
 Write-Host 'Kanomjeen source verification passed.' -ForegroundColor Green
 Write-Host 'This is structural verification only; run build.ps1 and runtime QA before production.' -ForegroundColor Yellow

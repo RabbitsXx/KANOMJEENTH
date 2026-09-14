@@ -28,9 +28,7 @@ namespace Kanomjeen.Core.Configuration
         public float CommandRateLimitSeconds = 1.5f;
         public float TeleportMovementToleranceMeters = 0.5f;
         public float PersistenceFlushSeconds = 30f;
-        // GUI is intentionally disabled while the UI is being rebuilt feature-by-feature.
-        // Keep the Effect identity fields below unchanged for the next UI implementation.
-        public bool EnableUi = false;
+        public bool EnableUi = true;
         public ushort UiEffectId = 51000;
         public short UiKey = 23001;
         public string UiContractVersion = "1.0";
@@ -51,7 +49,7 @@ namespace Kanomjeen.Core.Configuration
             CommandRateLimitSeconds = 1.5f;
             TeleportMovementToleranceMeters = 0.5f;
             PersistenceFlushSeconds = 30f;
-            EnableUi = false;
+            EnableUi = true;
             UiEffectId = 51000;
             UiKey = 23001;
             UiContractVersion = "1.0";

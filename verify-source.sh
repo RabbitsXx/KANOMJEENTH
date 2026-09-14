@@ -20,7 +20,7 @@ if grep -RniE 'california\.|namespace[[:space:]]+Tpa\b' "$ROOT/src" --include='*
 fi
 
 grep -Eq 'UiEffectId[[:space:]]*=[[:space:]]*51000' "$ROOT/src/Kanomjeen.Core/Configuration/KanomjeenCoreConfiguration.cs"
-echo 'Legacy combined Workshop GUI assets are intentionally absent; per-plugin GUI work is pending.'
+echo 'Workshop GUI assets are present; HUD data bridge is server-driven and requires live client QA.'
 
 echo 'Kanomjeen source verification passed.'
 echo 'Structural verification only: compile and runtime QA are still required.'

@@ -54,9 +54,7 @@ namespace Kanomjeen.Core
             Cooldowns = new PersistentCooldownService(Path.Combine(baseDir, "Kanomjeen.Core.cooldowns.xml"));
             if (Configuration.Instance.EnableWaypoints)
                 Waypoints = new WaypointService(Path.Combine(baseDir, "Kanomjeen.Core.waypoints.xml"), () => Configuration.Instance);
-            // GUI is disabled during the rebuild. The existing Effect ID/contract metadata stays
-            // in configuration so the new UI can be introduced incrementally later.
-            Ui = new UiService(0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
+            Ui = new UiService(Configuration.Instance.EnableUi ? Configuration.Instance.UiEffectId : (ushort)0, Configuration.Instance.UiKey, Configuration.Instance.UiContractVersion);
             Ui.Subscribe();
             Ui.ButtonClicked += OnUiButton;
 
@@ -69,6 +67,7 @@ namespace Kanomjeen.Core
             var flush = Math.Max(10f, Configuration.Instance.PersistenceFlushSeconds);
             InvokeRepeating(nameof(FlushPersistence), flush, flush);
             if (Waypoints != null) InvokeRepeating(nameof(SweepWaypoints), 5f, 5f);
+            if (Configuration.Instance.EnableUi) InvokeRepeating(nameof(PushHud), 1f, 0.2f);
             Logger.Log("[Kanomjeen.Core] Waypoints enabled in " + Configuration.Instance.WaypointMode + " mode. Native Unturned map markers are used; no client minimap module is installed.");
         }
 
@@ -89,7 +88,11 @@ namespace Kanomjeen.Core
                 foreach (var steamPlayer in Provider.clients)
                 {
                     var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
-                    if (player?.Player != null) Ui.Close(player);
+                    if (player?.Player != null)
+                    {
+                        Ui.ClearPlayer(player.Id);
+                        Ui.Close(player);
+                    }
                 }
                 Ui.Unsubscribe();
                 Ui.ButtonClicked -= OnUiButton;
@@ -203,6 +206,16 @@ namespace Kanomjeen.Core
         private void FlushPersistence() { Cooldowns?.SaveIfDirty(); Waypoints?.SaveIfDirty(); }
         private void SweepWaypoints() { if (Waypoints == null) return; Waypoints.SweepExpired(); foreach (var steamPlayer in Provider.clients) Waypoints.Sync(UnturnedPlayer.FromSteamPlayer(steamPlayer)); }
 
+        private void PushHud()
+        {
+            if (Ui == null || !Ui.IsConfigured) return;
+            foreach (var steamPlayer in Provider.clients)
+            {
+                var player = UnturnedPlayer.FromSteamPlayer(steamPlayer);
+                if (player != null && Ui.IsOpen(player)) Ui.PushHud(player, HudSnapshot.From(player));
+            }
+        }
+
         private void OnPlayerDisconnected(UnturnedPlayer player)
         {
             if (player == null) return;
@@ -213,7 +226,11 @@ namespace Kanomjeen.Core
             PlayerStates?.Remove(player.Id);
         }
 
-        private void OnPlayerConnected(UnturnedPlayer player) { Waypoints?.Sync(player); }
+        private void OnPlayerConnected(UnturnedPlayer player)
+        {
+            Waypoints?.Sync(player);
+            if (Configuration.Instance.EnableUi) Ui?.ShowHud(player);
+        }
 
         private void OnPlayerDamaged(Player nativePlayer, ref EDeathCause cause, ref ELimb limb, ref CSteamID killerId,
             ref Vector3 direction, ref float damage, ref float times, ref bool canDamage)

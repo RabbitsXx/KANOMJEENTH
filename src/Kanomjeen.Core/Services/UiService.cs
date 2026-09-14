@@ -26,6 +26,7 @@ namespace Kanomjeen.Core.Services
         private readonly short key;
         private readonly string contractVersion;
         private readonly Dictionary<string, string> activeScreens = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly HashSet<string> activeHud = new HashSet<string>(StringComparer.Ordinal);
 
         public event EventHandler<UiButtonEventArgs> ButtonClicked;
 
@@ -71,6 +72,7 @@ namespace Kanomjeen.Core.Services
 
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, true);
             activeScreens[player.Id] = Normalize(screen);
+            activeHud.Add(player.Id);
             FocusScreen(player, title, status);
             // FocusScreen() has already reset visibility for every known screen container.
             return true;
@@ -117,9 +119,29 @@ namespace Kanomjeen.Core.Services
         public void Close(UnturnedPlayer player)
         {
             if (player?.Player == null) return;
+            activeScreens.Remove(player.Id);
+            if (activeHud.Contains(player.Id))
+            {
+                ShowHud(player);
+                return;
+            }
             if (effectId != 0) EffectManager.askEffectClearByID(effectId, player.CSteamID);
             player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, false);
+        }
+
+        public void ShowHud(UnturnedPlayer player)
+        {
+            if (!IsConfigured || player?.Player == null) return;
+            UiGuard.Run("hud.clear+send", () =>
+            {
+                EffectManager.askEffectClearByID(effectId, player.CSteamID);
+                EffectManager.sendUIEffect(effectId, key, player.CSteamID, true);
+            });
+            activeHud.Add(player.Id);
             activeScreens.Remove(player.Id);
+            player.Player.setPluginWidgetFlag(EPluginWidgetFlags.Modal, false);
+            SendVisibility(player, "KJ_Dim", false);
+            SendVisibility(player, "KJ_Root", false);
         }
 
         /// <summary>True when this player currently holds an open Kanomjeen UI session.</summary>
@@ -140,15 +162,35 @@ namespace Kanomjeen.Core.Services
         public void SetText(UnturnedPlayer player, string childName, string text)
         {
             if (!IsConfigured || player?.Player == null || string.IsNullOrEmpty(childName)) return;
-            if (!IsOpen(player.Id)) return;
+            if (!IsOpen(player.Id) && !activeHud.Contains(player.Id)) return;
             UiGuard.Run("text:" + childName, () => EffectManager.sendUIEffectText(key, player.CSteamID, true, childName, text ?? string.Empty));
         }
 
         public void SetVisible(UnturnedPlayer player, string childName, bool visible)
         {
             if (!IsConfigured || player?.Player == null || string.IsNullOrEmpty(childName)) return;
-            if (!IsOpen(player.Id)) return;
+            if (!IsOpen(player.Id) && !activeHud.Contains(player.Id)) return;
+            SendVisibility(player, childName, visible);
+        }
+
+        private void SendVisibility(UnturnedPlayer player, string childName, bool visible)
+        {
+            if (!IsConfigured || player?.Player == null || string.IsNullOrEmpty(childName)) return;
             UiGuard.Run("visibility:" + childName, () => EffectManager.sendUIEffectVisibility(key, player.CSteamID, true, childName, visible));
+        }
+
+        public void PushHud(UnturnedPlayer player, HudSnapshot snapshot)
+        {
+            if (!IsConfigured || player?.Player == null || snapshot == null || !activeHud.Contains(player.Id)) return;
+            SetText(player, "KJ_Hud_Health", snapshot.Health.ToString());
+            SetText(player, "KJ_Hud_Food", snapshot.Food.ToString());
+            SetText(player, "KJ_Hud_Water", snapshot.Water.ToString());
+            SetText(player, "KJ_Hud_Virus", snapshot.Virus.ToString());
+            SetText(player, "KJ_Hud_Stamina", snapshot.Stamina.ToString());
+            SetText(player, "KJ_Hud_Oxygen", snapshot.Oxygen.ToString());
+            SetText(player, "KJ_Map_Bearing", snapshot.Bearing.ToString("000") + "°");
+            SetText(player, "KJ_Map_Direction", snapshot.Direction);
+            SetText(player, "KJ_Map_Coords", "X " + snapshot.X.ToString("0") + "  Y " + snapshot.Y.ToString("0") + "  Z " + snapshot.Z.ToString("0"));
         }
 
         public string GetActiveScreen(string playerId)
@@ -156,7 +198,11 @@ namespace Kanomjeen.Core.Services
             return playerId != null && activeScreens.TryGetValue(playerId, out var screen) ? screen : null;
         }
 
-        public void ClearPlayer(string playerId) => activeScreens.Remove(playerId);
+        public void ClearPlayer(string playerId)
+        {
+            activeScreens.Remove(playerId);
+            activeHud.Remove(playerId);
+        }
 
         private void OnEffectButtonClicked(Player nativePlayer, string buttonName)
         {

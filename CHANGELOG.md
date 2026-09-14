@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-staging — 2026-09-14 native HUD bridge prototype
+
+- Added a server-driven HUD snapshot for Health, Food, Water, Virus, Stamina and Oxygen.
+- Added continuous HUD session handling so the Effect is sent when a player connects and remains visible while menus open/close.
+- Added server-driven minimap bearing, compass direction and player coordinates.
+- Rebuilt and re-hashed the Workshop bundle; live client/server QA remains required.
+
 ## 0.1.0-staging — 2026-09-14 removed combined GUI package
 
 - Removed the old combined GUI prefab, editor builders, fonts, exported bundles, and Workshop upload folder.

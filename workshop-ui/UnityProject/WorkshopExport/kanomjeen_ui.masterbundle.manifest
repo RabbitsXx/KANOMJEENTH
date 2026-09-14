@@ -1,0 +1,64 @@
+ManifestFileVersion: 0
+CRC: 2007442523
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 39ac11bdf2c4927e51827971c867cefe
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 88ba48e416ab5ce12e21004e784c1397
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 39ac11bdf2c4927e51827971c867cefe
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 1392445389, guid: cb382fd9fbe8818b0bd76e27535e9382, type: 3}
+- Class: 114
+  Script: {fileID: 1980459831, guid: cb382fd9fbe8818b0bd76e27535e9382, type: 3}
+- Class: 114
+  Script: {fileID: 1301386320, guid: cb382fd9fbe8818b0bd76e27535e9382, type: 3}
+- Class: 114
+  Script: {fileID: -765806418, guid: cb382fd9fbe8818b0bd76e27535e9382, type: 3}
+- Class: 114
+  Script: {fileID: 708705254, guid: cb382fd9fbe8818b0bd76e27535e9382, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 128
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 222
+  Script: {instanceID: 0}
+- Class: 223
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers:
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentCallGroup
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.AnimationTriggers
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Button/ButtonClickedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.ColorBlock
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.FontData
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Navigation
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.SpriteState
+Assets:
+- Assets/KanomjeenUI/Effects/KanomjeenUI/Effect.prefab
+Dependencies: []
